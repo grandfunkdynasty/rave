@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 28
+/svn/!svn/ver/53/trunk/Tools
+END
+yacc
+K 25
+svn:wc:ra_dav:version-url
+V 33
+/svn/!svn/ver/53/trunk/Tools/yacc
+END
+m4.exe
+K 25
+svn:wc:ra_dav:version-url
+V 34
+/svn/!svn/ver/2/trunk/Tools/m4.exe
+END
+libiconv2.dll
+K 25
+svn:wc:ra_dav:version-url
+V 41
+/svn/!svn/ver/2/trunk/Tools/libiconv2.dll
+END
+regex2.dll
+K 25
+svn:wc:ra_dav:version-url
+V 38
+/svn/!svn/ver/2/trunk/Tools/regex2.dll
+END
+bison.yacc
+K 25
+svn:wc:ra_dav:version-url
+V 39
+/svn/!svn/ver/53/trunk/Tools/bison.yacc
+END
+libintl3.dll
+K 25
+svn:wc:ra_dav:version-url
+V 40
+/svn/!svn/ver/2/trunk/Tools/libintl3.dll
+END
+bison.exe
+K 25
+svn:wc:ra_dav:version-url
+V 37
+/svn/!svn/ver/2/trunk/Tools/bison.exe
+END
+flex.exe
+K 25
+svn:wc:ra_dav:version-url
+V 36
+/svn/!svn/ver/2/trunk/Tools/flex.exe
+END

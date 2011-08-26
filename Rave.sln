@@ -1,0 +1,34 @@
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Rave", "Rave.vcproj", "{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
+		Release wDEBUG|Win32 = Release wDEBUG|Win32
+		Release wDEBUG|x64 = Release wDEBUG|x64
+		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Debug|Win32.Build.0 = Debug|Win32
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Debug|x64.ActiveCfg = Debug|x64
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Debug|x64.Build.0 = Debug|x64
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release wDEBUG|Win32.ActiveCfg = Release wDEBUG|Win32
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release wDEBUG|Win32.Build.0 = Release wDEBUG|Win32
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release wDEBUG|x64.ActiveCfg = Release wDEBUG|x64
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release wDEBUG|x64.Build.0 = Release wDEBUG|x64
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release|Win32.ActiveCfg = Release|Win32
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release|Win32.Build.0 = Release|Win32
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release|x64.ActiveCfg = Release|x64
+		{ACAA1109-13F9-48F9-96D8-C31BC65FE5FD}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		AMDCaProjectFile = E:\Dev\Rave\CodeAnalyst\Atmoscript.caw
+	EndGlobalSection
+EndGlobal
