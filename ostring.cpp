@@ -123,14 +123,14 @@ IMPLEMENT( TypeOp )
     if ( arg._left )
         Operate( arg._left );
     else
-        _result << arg._left_type.TypeName();
+        _result << arg._left_type.Typename();
     _result << ( arg._type == TYPE_OP_EQ ? " <~> " :
                  arg._type == TYPE_OP_TO ? " ~> " :
                  arg._type == TYPE_OP_FROM ? " <~ " : "" );
     if ( arg._right )
         Operate( arg._right );
     else
-        _result << arg._right_type.TypeName();
+        _result << arg._right_type.Typename();
     _result << ")";
 }
 
@@ -295,12 +295,12 @@ IMPLEMENT( Layer )
 
 IMPLEMENT( Argument )
 {
-    _result << arg._type.TypeName() << " " << arg._id;
+    _result << arg._type.Typename() << " " << arg._id;
 }
 
 IMPLEMENT( FuncDef )
 {
-    _result << modifiers( arg._modifiers ) << arg._return_type.TypeName() << " " << arg._id << "(";
+    _result << modifiers( arg._modifiers ) << arg._return_type.Typename() << " " << arg._id << "(";
     bool first = true;
     for ( std::size_t i = 0; i < arg._args.size(); ++i ) {
         if ( !first )
@@ -336,7 +336,7 @@ IMPLEMENT( VidDef )
 
 IMPLEMENT( TypeDef )
 {
-    _result << arg._type.TypeName() << " ~" << arg._id << ";";
+    _result << arg._type.Typename() << " ~" << arg._id << ";";
 }
 
 IMPLEMENT( Program )

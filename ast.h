@@ -37,6 +37,7 @@ private:
 * Operator implementation magic
 ***************************************************************/
 
+#include "otype.h"
 #include "ostatic.h"
 #include "ostring.h"
 
@@ -52,6 +53,7 @@ private:
         op.Operate##type( *this );                                      \
     }                                                                   \
                                                                         \
+    friend void TypeOperator::Operate##type( type& arg );               \
     friend void StaticOperator::Operate##type( const type& arg );       \
     friend void StringOperator::Operate##type( const type& arg )
 

@@ -10,13 +10,18 @@ int main( int argc, char** argv )
     if ( !ast )
         return 1;
 
-    std::cout << "checking...";
-    StaticOperator ostatic;
+    int errors = 0;
+    std::cout << "checking semantics...";
+    TypeOperator otype( &errors );
+    otype.Operate( ast );
+
+    StaticOperator ostatic ( &errors );
     ostatic.Operate( ast );
-    if ( ostatic.Errors() )
-        std::cout << ostatic.Errors() << " error(s) detected.\n";
-    else
-        std::cout << " success\n";
+    if ( errors ) {
+        std::cout << errors << " error(s) detected.\n";
+        return 1;
+    }
+    std::cout << " success\n";
 
     StringOperator ostring;
     ostring.Operate( ast );

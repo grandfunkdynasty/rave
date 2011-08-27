@@ -3,24 +3,64 @@
 Type::InternalSet Type::_type_set;
 
 /***************************************************************
+* Type internals
+***************************************************************/
+
+class Internal {
+public:
+
+    enum RawType {
+        TYPE_VOID,
+        TYPE_INT,
+        TYPE_FLOAT,
+        TYPE_TUPLE,
+        TYPE_FUNCTION,
+        TYPE_SEQUENCE
+    };
+
+    Internal( int raw_type, Type return_type, const Type::TypeList& type_args );
+
+    Internal( const Internal& type );
+    const Internal& operator=( const Internal& type );
+
+    bool operator==( const Internal& type ) const;
+    bool operator!=( const Internal& type ) const;
+    bool Equivalent( const Internal& type ) const;
+    bool ConvertsTo( const Internal& type ) const;
+    Type Generalise( const Internal& type ) const;
+
+    std::string Typename() const;
+    int RawType() const;
+    const Type& ReturnType() const;
+    const Type::TypeList& TypeArgs() const;
+
+private:
+
+    int _raw_type;
+    Type _return_type;
+    Type::TypeList _type_args;
+
+};
+
+/***************************************************************
 * Primitive types
 ***************************************************************/
 
 Type Type::Void()
 {
-    static Internal result( TYPE_VOID, 0, Internal::TypeArgs() );
+    static Internal result( Internal::TYPE_VOID, Type::Void(), TypeList() );
     return result;
 }
 
 Type Type::Int()
 {
-    static Internal result( TYPE_INT, 0, Internal::TypeArgs() );
+    static Internal result( Internal::TYPE_INT, Type::Void(), TypeList() );
     return result;
 }
 
 Type Type::Float()
 {
-    static Internal result( TYPE_FLOAT, 0, Internal::TypeArgs() );
+    static Internal result( Internal::TYPE_FLOAT, Type::Void(), TypeList() );
     return result;
 }
 
@@ -30,32 +70,30 @@ Type Type::Float()
 
 Type Type::Tuple( const TypeList& type_args )
 {
-    Internal::TypeArgs internal_args;
-    for ( std::size_t i = 0; i < type_args.size(); ++i )
-        internal_args.push_back( type_args[ i ]._type );
-
-    Internal result( TYPE_TUPLE, 0, internal_args );
+    Internal result( Internal::TYPE_TUPLE, Type::Void(), type_args );
     return *_type_set.insert( result ).first;
 }
 
 Type Type::Function( const Type& return_type, const TypeList& arg_types )
 {
-    Internal::TypeArgs internal_args;
-    for ( std::size_t i = 0; i < arg_types.size(); ++i )
-        internal_args.push_back( arg_types[ i ]._type );
-
-    Internal result( TYPE_FUNCTION, return_type._type, internal_args );
+    Internal result( Internal::TYPE_FUNCTION, return_type, arg_types );
     return *_type_set.insert( result ).first;
 }
 
 Type Type::Sequence( const TypeList& arg_types )
 {
-    Internal::TypeArgs internal_args;
-    for ( std::size_t i = 0; i < arg_types.size(); ++i )
-        internal_args.push_back( arg_types[ i ]._type );
-
-    Internal result( TYPE_SEQUENCE, 0, internal_args );
+    Internal result( Internal::TYPE_SEQUENCE, Type::Void(), arg_types );
     return *_type_set.insert( result ).first;
+}
+
+Type Type::Typedef( const std::string& name )
+{
+    return name;
+}
+
+Type Type::Typedef( const std::string& name, const Type& type )
+{
+    return Type( name, *type._type );
 }
 
 /***************************************************************
@@ -68,18 +106,20 @@ Type::~Type()
 
 Type::Type( const Type& type )
 : _type( type._type )
+, _typename( type._typename )
 {
 }
 
 const Type& Type::operator=( const Type& type )
 {
     _type = type._type;
+    _typename = type._typename;
     return *this;
 }
 
 bool Type::operator==( const Type& type ) const
 {
-    return _type == type._type;
+    return _type == type._type && _typename == type._typename;
 }
 
 bool Type::operator!=( const Type& type ) const
@@ -87,74 +127,96 @@ bool Type::operator!=( const Type& type ) const
     return _type != type._type;
 }
 
+bool Type::Equivalent( const Type& type ) const
+{
+    if ( !_type || !type._type )
+        return false;
+    return _type->Equivalent( *type._type );
+}
+
 bool Type::ConvertsTo( const Type& type ) const
 {
+    if ( !_type || !type._type )
+        return false;
     return _type->ConvertsTo( *type._type );
 }
 
 Type Type::Generalise( const Type& type ) const
 {
+    if ( !_type || !type._type )
+        return Type::Void();
     return _type->Generalise( *type._type );
 }
 
-std::string Type::TypeName() const
+std::string Type::Typename() const
 {
-    return _type->TypeName();
+    if ( _typename != "" )
+        return "~" + _typename;
+    if ( !_type )
+        return "undefined";
+    return _type->Typename();
+}
+
+bool Type::IsUnresolved() const
+{
+    return !_type;
+}
+
+const std::string& Type::Typedef() const
+{
+    return _typename;
 }
 
 bool Type::IsTuple() const
 {
-    return _type->RawType() == TYPE_TUPLE;
+    if ( !_type )
+        return false;
+    return _type->RawType() == Internal::TYPE_TUPLE;
 }
 
 bool Type::IsFunction() const
 {
-    return _type->RawType() == TYPE_FUNCTION;
+    if ( !_type )
+        return false;
+    return _type->RawType() == Internal::TYPE_FUNCTION;
 }
 
 bool Type::IsSequence() const
 {
-    return _type->RawType() == TYPE_SEQUENCE;
+    if ( !_type )
+        return false;
+    return _type->RawType() == Internal::TYPE_SEQUENCE;
 }
 
-Type Type::ReturnType() const
+const Type& Type::ReturnType() const
 {
-    if ( !_type->ReturnType() )
-        return Type::Void();
-    return *_type->ReturnType();
+    return _type->ReturnType();
 }
 
-std::size_t Type::ArgTypeSize() const
+const Type::TypeList& Type::TypeArgs() const
 {
-    return _type->ArgTypes().size();
-}
-
-Type Type::ArgType( std::size_t index ) const
-{
-    if ( index >= _type->ArgTypes().size() )
-        return Type::Void();
-    return *_type->ArgTypes()[ index ];
+    return _type->TypeArgs();
 }
 
 /***************************************************************
 * Internals
 ***************************************************************/
 
-Type::Internal::Internal( int raw_type, const Internal* return_type, const TypeArgs& type_args )
+Internal::Internal( int raw_type, Type return_type, const Type::TypeList& type_args )
 : _raw_type( raw_type )
 , _return_type( return_type )
 , _type_args( type_args )
 {
 }
 
-Type::Internal::Internal( const Internal& type )
+Internal::Internal( const Internal& type )
 : _raw_type( type._raw_type )
 , _return_type( type._return_type )
 , _type_args( type._type_args )
 {
 }
 
-bool Type::Internal::operator==( const Internal& type ) const
+bool Internal::operator==( const Internal& type ) const
 {
     if ( _raw_type != type._raw_type || _return_type != type._return_type ||
          _type_args.size() != type._type_args.size() )
@@ -166,12 +228,12 @@ bool Type::Internal::operator==( const Internal& type ) const
     return true;
 }
 
-bool Type::Internal::operator!=( const Internal& type ) const
+bool Internal::operator!=( const Internal& type ) const
 {
     return !operator==( type );
 }
 
-const Type::Internal& Type::Internal::operator=( const Internal& type )
+const Internal& Internal::operator=( const Internal& type )
 {
     _raw_type = type._raw_type;
     _return_type = type._return_type;
@@ -179,26 +241,74 @@ const Type::Internal& Type::Internal::operator=( const Internal& type )
     return *this;
 }
 
-std::size_t Type::Internal::Hash::operator()( const Internal& type ) const
+std::size_t Type::Hash::operator()( const Internal& type ) const
 {
     std::size_t t = 17;
-    boost::hash_combine( t, type._raw_type );
-    boost::hash_combine( t, type._return_type );
-    for ( std::size_t i = 0; i < type._type_args.size(); ++i )
-        boost::hash_combine( t, type._type_args[ i ] );
+    boost::hash_combine( t, type.RawType() );
+    boost::hash_combine( t, type.ReturnType()._type );
+    boost::hash_combine( t, type.ReturnType()._typename );
+    for ( std::size_t i = 0; i < type.TypeArgs().size(); ++i ) {
+        boost::hash_combine( t, type.TypeArgs()[ i ]._type );
+        boost::hash_combine( t, type.TypeArgs()[ i ]._typename );
+    }
     return t;
 }
 
 Type::Type( const Internal& type )
 : _type( &type )
+, _typename( "" )
 {
+}
+
+Type::Type( const std::string& name )
+: _type( 0 )
+, _typename( name )
+{
+}
+
+Type::Type( const std::string& name, const Internal& type )
+: _type( &type )
+, _typename( name )
+{
+}
+
+/***************************************************************
+* Equivalent
+***************************************************************/
+
+bool Internal::Equivalent( const Internal& type ) const
+{
+    if ( _raw_type != type._raw_type )
+        return false;
+    if ( _raw_type == TYPE_VOID || _raw_type == TYPE_INT || _raw_type == TYPE_FLOAT )
+        return true;
+
+    if ( _raw_type == TYPE_TUPLE ) {
+        if ( _type_args.size() != type._type_args.size() )
+            return false;
+        for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
+            if ( !_type_args[ i ].Equivalent( type._type_args[ i ] ) )
+                return false;
+        }
+        return true;
+    }
+
+    if ( _raw_type == TYPE_FUNCTION && !_return_type.Equivalent( type._return_type ) )
+        return false;
+    if ( _type_args.size() != type._type_args.size() )
+        return false;
+    for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
+        if ( !type._type_args[ i ].Equivalent( _type_args[ i ] ) )
+            return false;
+    }
+    return true;
 }
 
 /***************************************************************
 * Converts to
 ***************************************************************/
 
-bool Type::Internal::ConvertsTo( const Internal& type ) const
+bool Internal::ConvertsTo( const Internal& type ) const
 {
     if ( _raw_type == TYPE_VOID || type._raw_type == TYPE_VOID )
         return false;
@@ -212,14 +322,14 @@ bool Type::Internal::ConvertsTo( const Internal& type ) const
         if ( type._raw_type != TYPE_TUPLE || _type_args.size() != type._type_args.size() )
             return false;
         for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
-            if ( !_type_args[ i ]->ConvertsTo( *type._type_args[ i ] ) )
+            if ( !_type_args[ i ].ConvertsTo( type._type_args[ i ] ) )
                 return false;
         }
         return true;
     }
 
     if ( _raw_type == TYPE_FUNCTION ) {
-        if ( type._raw_type != TYPE_FUNCTION || *_return_type != *type._return_type )
+        if ( type._raw_type != TYPE_FUNCTION || !_return_type.Equivalent( type._return_type ) )
             return false;
     }
     if ( _raw_type == TYPE_SEQUENCE && type._raw_type != TYPE_SEQUENCE )
@@ -227,7 +337,7 @@ bool Type::Internal::ConvertsTo( const Internal& type ) const
     if ( _type_args.size() != type._type_args.size() )
         return false;
     for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
-        if ( *type._type_args[ i ] != *_type_args[ i ] )
+        if ( !type._type_args[ i ].Equivalent( _type_args[ i ] ) )
             return false;
     }
     return true;
@@ -237,50 +347,50 @@ bool Type::Internal::ConvertsTo( const Internal& type ) const
 * Generalise
 ***************************************************************/
 
-Type Type::Internal::Generalise( const Internal& type ) const
+Type Internal::Generalise( const Internal& type ) const
 {
     if ( _raw_type == TYPE_VOID || type._raw_type == TYPE_VOID )
-        return Void();
+        return Type::Void();
     if ( _raw_type == TYPE_INT )
-        return type._raw_type == TYPE_INT ? Int() :
-               type._raw_type == TYPE_FLOAT ? Float() : Void();
+        return type._raw_type == TYPE_INT ? Type::Int() :
+               type._raw_type == TYPE_FLOAT ? Type::Float() : Type::Void();
     if ( _raw_type == TYPE_FLOAT )
         return type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT ?
-               Float() : Void();
+               Type::Float() : Type::Void();
 
     if ( _raw_type == TYPE_TUPLE ) {
         if ( _type_args.size() != type._type_args.size() )
-            return Void();
-        TypeList type_args;
+            return Type::Void();
+        Type::TypeList type_args;
         for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
-            Type t = _type_args[ i ]->Generalise( *type._type_args[ i ] );
-            if ( t == Void() )
-                return Void();
+            Type t = _type_args[ i ].Generalise( type._type_args[ i ] );
+            if ( t == Type::Void() )
+                return Type::Void();
             type_args.push_back( t );
         }
-        return Tuple( type_args );
+        return Type::Tuple( type_args );
     }
 
     if ( _raw_type != type._raw_type )
-        return Void();
-    TypeList arg_types;
+        return Type::Void();
+    Type::TypeList arg_types;
     for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
-        if ( *_type_args[ i ] != *type._type_args[ i ] )
-            return Void();
-        arg_types.push_back( *_type_args[ i ] );
+        if ( _type_args[ i ] != type._type_args[ i ] )
+            return Type::Void();
+        arg_types.push_back( _type_args[ i ] );
     }
     if ( _raw_type == TYPE_SEQUENCE )
-        return Sequence( arg_types );
+        return Type::Sequence( arg_types );
     if ( _return_type != type._return_type )
-        return Void();
-    return Function( *_return_type, arg_types );
+        return Type::Void();
+    return Type::Function( _return_type, arg_types );
 }
 
 /***************************************************************
 * Accessors
 ***************************************************************/
 
-std::string Type::Internal::TypeName() const
+std::string Internal::Typename() const
 {
     if ( _raw_type == TYPE_VOID )
         return "void";
@@ -289,7 +399,7 @@ std::string Type::Internal::TypeName() const
     if ( _raw_type == TYPE_FLOAT )
         return "float";
 
-    std::string s = _raw_type == TYPE_FUNCTION ? _return_type->TypeName() + " function" :
+    std::string s = _raw_type == TYPE_FUNCTION ? _return_type.Typename() + " function" :
                     _raw_type == TYPE_SEQUENCE ? "sequence" : "";
 
     bool first = true;
@@ -297,23 +407,23 @@ std::string Type::Internal::TypeName() const
     for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
         if ( !first )
             s += ", ";
-        s += _type_args[ i ]->TypeName();
+        s += _type_args[ i ].Typename();
         first = false;
     }
     return s + ")";
 }
 
-int Type::Internal::RawType() const
+int Internal::RawType() const
 {
     return _raw_type;
 }
 
-const Type::Internal* Type::Internal::ReturnType() const
+const Type& Internal::ReturnType() const
 {
     return _return_type;
 }
 
-const Type::Internal::TypeArgs& Type::Internal::ArgTypes() const
+const Type::TypeList& Internal::TypeArgs() const
 {
     return _type_args;
 }

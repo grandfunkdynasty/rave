@@ -7,8 +7,8 @@
 #define IMPLEMENT_OPERATOR StaticOperator
 #define IMPLEMENT_TYPE IMPLEMENT_CONST
 
-StaticOperator::StaticOperator()
-: _errors( 0 )
+StaticOperator::StaticOperator( int* errors )
+: _errors( errors )
 , _type( Type::Void() )
 , _return_type( Type::Void() )
 , _return_path( false )
@@ -21,26 +21,22 @@ StaticOperator::~StaticOperator()
 {
 }
 
-int StaticOperator::Errors() const
-{
-    return _errors;
-}
-
 void StaticOperator::Error( const Ast& arg, const std::string& text )
 {
-    if ( !_errors )
+    if ( !*_errors )
         std::cout << "\n";
-    if ( _errors == 64 )
+    if ( *_errors == 64 )
         std::cout << "[more errors...]\n";
-    else if ( _errors < 64 )
+    else if ( *_errors < 64 )
         std::cout << arg.GetFileInfo() << " line " << arg.GetLineInfo() << ":\t" << text << "\n";
-    ++_errors;
+    ++*_errors;
 }
 
 /***************************************************************
 * Implementations
 ***************************************************************/
 // TODO: insert int-to-float casts
+// TODO: can't do constant analysis, change to constants
 
 IMPLEMENT( Constant )
 {
@@ -49,10 +45,9 @@ IMPLEMENT( Constant )
 
 IMPLEMENT( Identifier )
 {
-    _type = _table.GetEntry( arg._id );
-    if ( _type == Type::Void() ) {
+    if ( !_table.HasEntry( arg._id ) )
         Error( arg, "undeclared identifier '" + arg._id + "'" );
-    }
+    _type = _table.GetEntry( arg._id );
 }
 
 IMPLEMENT( TernaryOp )
@@ -65,23 +60,27 @@ IMPLEMENT( TernaryOp )
     Type right = _type;
 
     if ( arg._type == TERNARY_OP_TERNARY ) {
-        if ( !expr.ConvertsTo( Type::Int() ) )
-            Error( arg, "cannot apply '?' to '" + expr.TypeName() + "'" );
+        if ( !expr.ConvertsTo( Type::Int() ) && expr != Type::Void() )
+            Error( arg, "cannot apply '?' to '" + expr.Typename() + "'" );
         _type = left.Generalise( right );
-        if ( _type == Type::Void() )
-            Error( arg, "'?': cannot generalise '" + left.TypeName() + "' with '" + right.TypeName() + "'" );
+        if ( _type == Type::Void() && left != Type::Void() && right != Type::Void() )
+            Error( arg, "'?': cannot generalise '" + left.Typename() +
+                   "' with '" + right.Typename() + "'" );
     }
     else if ( arg._type == TERNARY_OP_TUPLE_REPLACE ) {
-        if ( !expr.IsTuple() )
-            Error( arg, "cannot apply '[=]' to '" + expr.TypeName() + "'" );
+        if ( !expr.IsTuple() && expr != Type::Void() )
+            Error( arg, "cannot apply '[=]' to '" + expr.Typename() + "'" );
         // TODO: constant-index checking
-        if ( !left.ConvertsTo( Type::Int() ) )
-            Error( arg, "'[=]': cannot convert '" + left.TypeName() + "' to '" + Type::Int().TypeName() + "'" );
+        if ( !left.ConvertsTo( Type::Int() ) && left != Type::Void() )
+            Error( arg, "'[=]': cannot convert '" + left.Typename() +
+                   "' to '" + Type::Int().Typename() + "'" );
         // TODO: tuple-arg-assignment type checking
         _type = expr;
     }
-    else
+    else {
+        Error( arg, "unsupported ternary operation" );
         _type = Type::Void();
+    }
 }
 
 IMPLEMENT( BinaryOp )
@@ -114,14 +113,15 @@ IMPLEMENT( BinaryOp )
           arg._type == BINARY_OP_TUPLE_EXTRACT ? "[]" : "" );
 
     if ( arg._type == BINARY_OP_TUPLE_EXTRACT ) {
-        if ( !left.IsTuple() )
-            Error( arg, "cannot apply '" + op + "' to '" + left.TypeName() + "'" );
+        if ( !left.IsTuple() && left != Type::Void() )
+            Error( arg, "cannot apply '" + op + "' to '" + left.Typename() + "'" );
         // TODO: constant-index checking
-        if ( !right.ConvertsTo( Type::Int() ) )
-            Error( arg, "'" + op + "': cannot convert '" + right.TypeName() + "' to '" + Type::Int().TypeName() + "'" );
+        if ( !right.ConvertsTo( Type::Int() ) && right != Type::Void() )
+            Error( arg, "'" + op + "': cannot convert '" + right.Typename() +
+                   "' to '" + Type::Int().Typename() + "'" );
         // TODO: tuple-arg-type extraction
         if ( left.IsTuple() )
-            _type = left.ArgType( 0 );
+            _type = Type::Void();
         else
             _type = Type::Void();
     }
@@ -129,34 +129,46 @@ IMPLEMENT( BinaryOp )
               arg._type == BINARY_OP_BIT_OR || arg._type == BINARY_OP_BIT_AND ||
               arg._type == BINARY_OP_BIT_XOR ||
               arg._type == BINARY_OP_LSHIFT || arg._type == BINARY_OP_RSHIFT ) {
-        if ( !left.ConvertsTo( Type::Int() ) || !right.ConvertsTo( Type::Int() ) )
-            Error( arg, "cannot apply '" + op + "' to '" + left.TypeName() + "', '" + right.TypeName() + "'" );
+        if ( !( left.ConvertsTo( Type::Int() ) && left != Type::Void() ) ||
+             !( right.ConvertsTo( Type::Int() ) && right != Type::Void() ) )
+            Error( arg, "cannot apply '" + op + "' to '" +
+                   left.Typename() + "', '" + right.Typename() + "'" );
         _type = Type::Int();
     }
     else if ( arg._type == BINARY_OP_EQ || arg._type == BINARY_OP_NE ) {
-        if ( left.Generalise( right ) == Type::Void() )
-            Error( arg, "cannot apply '" + op + "' to '" + left.TypeName() + "', '" + right.TypeName() + "'" );
+        if ( left.Generalise( right ) == Type::Void() &&
+             left != Type::Void() && right != Type::Void() )
+            Error( arg, "cannot apply '" + op + "' to '" +
+                   left.Typename() + "', '" + right.Typename() + "'" );
         _type = Type::Int();
     }
     else if ( arg._type == BINARY_OP_GT || arg._type == BINARY_OP_GE ||
               arg._type == BINARY_OP_LT || arg._type == BINARY_OP_LE ) {
-        if ( ( !left.ConvertsTo( Type::Int() ) && !left.ConvertsTo( Type::Float() ) ) ||
-             ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) ) )
-            Error( arg, "cannot apply '" + op + "' to '" + left.TypeName() + "', '" + right.TypeName() + "'" );
+        if ( ( !left.ConvertsTo( Type::Int() ) && !left.ConvertsTo( Type::Float() ) &&
+               left != Type::Void() ) ||
+             ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) &&
+               right != Type::Void() ) )
+            Error( arg, "cannot apply '" + op + "' to '" +
+                   left.Typename() + "', '" + right.Typename() + "'" );
         _type = Type::Int();
     }
     else if ( arg._type == BINARY_OP_ADD || arg._type == BINARY_OP_SUB ||
               arg._type == BINARY_OP_MUL || arg._type == BINARY_OP_DIV ||
               arg._type == BINARY_OP_MOD || arg._type == BINARY_OP_EXP ) {
         // TODO: const-checking for illegal operations?
-        if ( ( !left.ConvertsTo( Type::Int() ) && !left.ConvertsTo( Type::Float() ) ) ||
-             ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) ) )
-            Error( arg, "cannot apply '" + op + "' to '" + left.TypeName() + "', '" + right.TypeName() + "'" );
+        if ( ( !left.ConvertsTo( Type::Int() ) && !left.ConvertsTo( Type::Float() ) &&
+               left != Type::Void() ) ||
+             ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) &&
+               right != Type::Void() ) )
+            Error( arg, "cannot apply '" + op + "' to '" +
+                   left.Typename() + "', '" + right.Typename() + "'" );
         _type = left.ConvertsTo( Type::Int() ) && right.ConvertsTo( Type::Int() ) ?
                 Type::Int() : Type::Float();
     }
-    else
+    else {
+        Error( arg, "unsupported binary operation" );
         _type = Type::Void();
+    }
 }
 
 
@@ -169,22 +181,25 @@ IMPLEMENT( UnaryOp )
                      arg._type == UNARY_OP_FLOOR ? "[]" : "";
 
     if ( arg._type == UNARY_OP_NOT || arg._type == UNARY_OP_BIT_NOT ) {
-        if ( !_type.ConvertsTo( Type::Int() ) )
-            Error( arg, "cannot apply '" + op + "' to '" + _type.TypeName() + "'" );
+        if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
+            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
         _type = Type::Int();
     }
     else if ( arg._type == UNARY_OP_NEGATION ) {
-        if ( !_type.ConvertsTo( Type::Int() ) && !_type.ConvertsTo( Type::Float() ) )
-            Error( arg, "cannot apply '" + op + "' to '" + _type.TypeName() + "'" );
+        if ( !_type.ConvertsTo( Type::Int() ) && !_type.ConvertsTo( Type::Float() ) &&
+             _type != Type::Void() )
+            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
         _type = _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float();
     }
     else if ( arg._type == UNARY_OP_FLOOR ) {
-        if ( _type != Type::Float() )
-            Error( arg, "cannot apply '" + op + "' to '" + _type.TypeName() + "'" );
+        if ( _type != Type::Float() && _type != Type::Void() )
+            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
         _type = Type::Int();
     }
-    else
+    else {
+        Error( arg, "unsupported unary operation" );
         _type = Type::Void();
+    }
 }
 
 IMPLEMENT( TypeOp )
@@ -217,30 +232,35 @@ IMPLEMENT( FunctionCall )
     }
 
     if ( !function.IsFunction() && !function.IsSequence() ) {
-        Error( arg, "cannot apply '()' to '" + function.TypeName() + "'" );
+        if ( function != Type::Void() )
+            Error( arg, "cannot apply '()' to '" + function.Typename() + "'" );
         _type = Type::Void();
         return;
     }
 
-    for ( std::size_t i = 0; i < list.size() && i < function.ArgTypeSize(); ++i ) {
-        if ( !list[ i ].ConvertsTo( function.ArgType( i ) ) )
-            Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].TypeName() + "' to '" + function.ArgType( i ).TypeName() + "'" );
+    for ( std::size_t i = 0; i < list.size() && i < function.TypeArgs().size(); ++i ) {
+        if ( !list[ i ].ConvertsTo( function.TypeArgs()[ i ] ) && list[ i ] != Type::Void() &&
+             function.TypeArgs()[ i ] != Type::Void() )
+            Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].Typename() +
+                   "' to '" + function.TypeArgs()[ i ].Typename() + "'" );
     }
     
-    if ( list.size() > function.ArgTypeSize() ) {
-        Error( arg, "too many arguments for '" + function.TypeName() + "'" );
-        _type = Type::Void();
+    if ( list.size() > function.TypeArgs().size() ) {
+        Error( arg, "too many arguments for '" + function.Typename() + "'" );
+        _type = function.IsFunction() ?
+                function.ReturnType() : Type::Sequence( Type::TypeList() );
         return;
     }
 
-    if ( list.size() == function.ArgTypeSize() ) {
-        _type = function.IsFunction() ? function.ReturnType() : Type::Sequence( Type::TypeList() );
+    if ( list.size() == function.TypeArgs().size() ) {
+        _type = function.IsFunction() ?
+                function.ReturnType() : Type::Sequence( Type::TypeList() );
         return;
     }
 
     Type::TypeList new_list;
-    for ( std::size_t i = list.size(); i < function.ArgTypeSize(); ++i ) {
-        new_list.push_back( function.ArgType( i ) );
+    for ( std::size_t i = list.size(); i < function.TypeArgs().size(); ++i ) {
+        new_list.push_back( function.TypeArgs()[ i ] );
     }
     _type = function.IsFunction() ?
         Type::Function( function.ReturnType(), new_list ) : Type::Sequence( new_list );
@@ -269,9 +289,13 @@ IMPLEMENT( Return )
         _return_type = _type;
     else {
         Type t = _return_type.Generalise( _type );
-        if ( t == Type::Void() )
-            Error( arg, "return value: cannot generalise '" + _return_type.TypeName() + "' with '" + _type.TypeName() + "'" );
-        _return_type = t;
+        if ( t == Type::Void() ) {
+            if ( _return_type != Type::Void() && _type != Type::Void() )
+                Error( arg, "return value: cannot generalise '" + _return_type.Typename() +
+                       "' with '" + _type.Typename() + "'" );
+        }
+        else
+            _return_type = t;
     }
     _return_path = true;
     _type = Type::Void();
@@ -282,8 +306,9 @@ IMPLEMENT( Guard )
     bool b = _return_path;
     _return_path = false;
     Operate( arg._expr );
-    if ( !_type.ConvertsTo( Type::Int() ) )
-        Error( arg, "condition: cannot convert '" + _type.TypeName() + "' to '" + Type::Int().TypeName() + "'" );
+    if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
+        Error( arg, "condition: cannot convert '" + _type.Typename() +
+               "' to '" + Type::Int().Typename() + "'" );
     Operate( arg._then );
     if ( arg._otherwise )
         Operate( arg._otherwise );
@@ -332,10 +357,12 @@ IMPLEMENT( Loop )
     Type begin = _type;
     Operate( arg._end );
     Type end = _type;
-    if ( !begin.ConvertsTo( Type::Int() ) )
-        Error( arg, "loop index: cannot convert '" + begin.TypeName() + "' to '" + Type::Int().TypeName() + "'" );
-    if ( !end.ConvertsTo( Type::Int() ) )
-        Error( arg, "loop index: cannot convert '" + end.TypeName() + "' to '" + Type::Int().TypeName() + "'" );
+    if ( !begin.ConvertsTo( Type::Int() ) && begin != Type::Void() )
+        Error( arg, "loop index: cannot convert '" + begin.Typename() +
+               "' to '" + Type::Int().Typename() + "'" );
+    if ( !end.ConvertsTo( Type::Int() ) && end != Type::Void() )
+        Error( arg, "loop index: cannot convert '" + end.Typename() +
+               "' to '" + Type::Int().Typename() + "'" );
 
     _table.Push();
     _table.AddEntry( arg._id, Type::Int() );
@@ -355,21 +382,24 @@ IMPLEMENT( SequenceCall )
     }
 
     if ( !sequence.IsSequence() ) {
-        Error( arg, "cannot call '" + sequence.TypeName() + "'" );
+        if ( sequence != Type::Void() )
+            Error( arg, "cannot call '" + sequence.Typename() + "'" );
         _type = Type::Void();
         return;
     }
 
-    for ( std::size_t i = 0; i < list.size() && i < sequence.ArgTypeSize(); ++i ) {
-        if ( !list[ i ].ConvertsTo( sequence.ArgType( i ) ) )
-            Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].TypeName() + "' to '" + sequence.ArgType( i ).TypeName() + "'" );
+    for ( std::size_t i = 0; i < list.size() && i < sequence.TypeArgs().size(); ++i ) {
+        if ( !list[ i ].ConvertsTo( sequence.TypeArgs()[ i ] ) && list[ i ] != Type::Void() &&
+             sequence.TypeArgs()[ i ] != Type::Void() )
+            Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].Typename() +
+                   "' to '" + sequence.TypeArgs()[ i ].Typename() + "'" );
     }
     
-    if ( list.size() > sequence.ArgTypeSize() )
-        Error( arg, "too many arguments for '" + sequence.TypeName() + "'" );
+    if ( list.size() > sequence.TypeArgs().size() )
+        Error( arg, "too many arguments for '" + sequence.Typename() + "'" );
 
-    if ( list.size() < sequence.ArgTypeSize() )
-        Error( arg, "too few arguments for '" + sequence.TypeName() + "'" );
+    if ( list.size() < sequence.TypeArgs().size() )
+        Error( arg, "too few arguments for '" + sequence.Typename() + "'" );
 
     _type = Type::Void();
 }
@@ -401,8 +431,9 @@ IMPLEMENT( Layer )
         Operate( arg._fx );
         fx = _type;
     }
-    if ( arg._order && !order.ConvertsTo( Type::Int() ) )
-        Error( arg, "layer index: cannot convert '" + order.TypeName() + "' to '" + Type::Int().TypeName() + "'" );
+    if ( arg._order && !order.ConvertsTo( Type::Int() ) && order != Type::Void() )
+        Error( arg, "layer index: cannot convert '" + order.Typename() +
+               "' to '" + Type::Int().Typename() + "'" );
     // TODO: fx type check
     Operate( arg._statement );
     _type = Type::Void();
@@ -440,8 +471,9 @@ IMPLEMENT( FuncDef )
     _return_type = Type::Void();
     _return_path = false;
     Operate( arg._expr );
-    if ( !_return_type.ConvertsTo( arg._return_type ) )
-        Error( arg, "'" + arg._id + "': cannot convert '" + _type.TypeName() + "' to '" + arg._return_type.TypeName() + "'" );
+    if ( !_return_type.ConvertsTo( arg._return_type ) && _return_type != Type::Void() )
+        Error( arg, "'" + arg._id + "': cannot convert '" + _return_type.Typename() +
+               "' to '" + arg._return_type.Typename() + "'" );
     if ( !_return_path )
         Error( arg, "'" + arg._id + "': not all code paths return a value" );
     _table.Pop();
@@ -483,8 +515,9 @@ IMPLEMENT( VidDef )
     if ( arg._modifiers & MODIFIER_LOCAL )
         Error( arg, "'local' modifier illegal on video definitions" );
     Operate( arg._frame_count );
-    if ( !_type.ConvertsTo( Type::Int() ) )
-        Error( arg, "frame count: cannot convert '" + _type.TypeName() + "' to '" + Type::Int().TypeName() + "'" );
+    if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
+        Error( arg, "frame count: cannot convert '" + _type.Typename() +
+               "' to '" + Type::Int().Typename() + "'" );
     _table.Push();
     _table.AddEntry( "frame", Type::Int() );
     Operate( arg._statement );
@@ -494,12 +527,8 @@ IMPLEMENT( VidDef )
 
 IMPLEMENT( TypeDef )
 {
-    // TODO: actually do something
-    if ( _declarations ) {
-        if ( _declare_globals && arg._modifiers & MODIFIER_LOCAL )
-            return;
+    if ( _declarations )
         return;
-    }
 
     if ( arg._modifiers & MODIFIER_CACHE )
         Error( arg, "'cache' modifier illegal on type definitions" );
@@ -519,6 +548,7 @@ IMPLEMENT( Program )
         _declare_globals = false;
         return;
     }
+
     _table.Push();
     _declarations = true;
     for ( std::size_t i = 0; i < arg._elements.size(); ++i )

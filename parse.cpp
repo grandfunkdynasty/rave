@@ -145,7 +145,7 @@ void push_back( Node* parent, Node* child )
 Type construct_type( Node* node )
 {
     if ( node->sub_type == TYPE_TYPEDEF )
-        return Type::Void();
+        return Type::Typedef( node->string_data );
     if ( node->sub_type == TYPE_INT )
         return Type::Int();
     if ( node->sub_type == TYPE_FLOAT )

@@ -7,16 +7,15 @@
 class StaticOperator : public ConstOperator {
 public:
 
-    StaticOperator();
+    StaticOperator( int* errors );
     ~StaticOperator();
 
     CONST_OPERATOR;
-    int Errors() const;
 
 private:
 
     void Error( const Ast& arg, const std::string& text );
-    int _errors;
+    int* _errors;
 
     Type _type;
     Type _return_type;

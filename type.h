@@ -10,6 +10,7 @@
 
 typedef long rave_int;
 typedef double rave_float;
+class Internal;
 
 /***************************************************************
 * Types
@@ -26,6 +27,8 @@ public:
     static Type Tuple( const TypeList& type_args );
     static Type Function( const Type& return_type, const TypeList& arg_types );
     static Type Sequence( const TypeList& arg_types );
+    static Type Typedef( const std::string& name );
+    static Type Typedef( const std::string& name, const Type& type );
 
     ~Type();
 
@@ -34,16 +37,18 @@ public:
 
     bool operator==( const Type& type ) const;
     bool operator!=( const Type& type ) const;
+    bool Equivalent( const Type& type ) const;
     bool ConvertsTo( const Type& type ) const;
     Type Generalise( const Type& type ) const;
 
-    std::string TypeName() const;
+    std::string Typename() const;
+    bool IsUnresolved() const;
+    const std::string& Typedef() const;
     bool IsTuple() const;
     bool IsFunction() const;
     bool IsSequence() const;
-    Type ReturnType() const;
-    std::size_t ArgTypeSize() const;
-    Type ArgType( std::size_t index ) const;
+    const Type& ReturnType() const;
+    const TypeList& TypeArgs() const;
 
 /***************************************************************
 * Internals
@@ -51,54 +56,20 @@ public:
 
 private:
 
-    enum RawType {
-        TYPE_VOID,
-        TYPE_INT,
-        TYPE_FLOAT,
-        TYPE_TUPLE,
-        TYPE_FUNCTION,
-        TYPE_SEQUENCE
-    };
-
-    class Internal {
+    class Hash {
     public:
 
-        typedef std::vector<const Internal*> TypeArgs;
-
-        Internal( int raw_type, const Internal* return_type, const TypeArgs& type_args );
-
-        Internal( const Internal& type );
-        const Internal& operator=( const Internal& type );
-
-        bool operator==( const Internal& type ) const;
-        bool operator!=( const Internal& type ) const;
-        bool ConvertsTo( const Internal& type ) const;
-        Type Generalise( const Internal& type ) const;
-
-        std::string TypeName() const;
-        int RawType() const;
-        const Internal* ReturnType() const;
-        const TypeArgs& ArgTypes() const;
-
-        class Hash {
-        public:
-
-            std::size_t operator()( const Internal& type ) const;
-
-        };
-
-    private:
-
-        int _raw_type;
-        const Internal* _return_type;
-        TypeArgs _type_args;
+        std::size_t operator()( const Internal& type ) const;
 
     };
 
+    std::string _typename;
     const Internal* _type;
     Type( const Internal& type );
+    Type( const std::string& name );
+    Type( const std::string& name, const Internal& type );
 
-    typedef boost::unordered_set<Internal, Internal::Hash> InternalSet;
+    typedef boost::unordered_set<Internal, Hash> InternalSet;
     static InternalSet _type_set;
 
 };

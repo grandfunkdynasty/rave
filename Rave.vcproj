@@ -775,6 +775,14 @@
 				RelativePath=".\ostring.h"
 				>
 			</File>
+			<File
+				RelativePath=".\otype.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\otype.h"
+				>
+			</File>
 		</Filter>
 		<File
 			RelativePath=".\compile.bat"
