@@ -60,7 +60,7 @@ struct Node* error( const char* text )
 %token              T_BASE
 %token              T_MERGE
 %token              T_USE
-%token <type>       T_TERNARY_OP_0
+%token              T_TERNARY_OP_0
 %token <type>       T_TERNARY_OP_1
 %token <type>       T_BINARY_OP_0
 %token <type>       T_BINARY_OP_1
@@ -84,23 +84,23 @@ struct Node* error( const char* text )
 * Precedence
 ***************************************************************/
 
-%left               T_TERNARY_OP_0          /* ?: */
-%left               T_BINARY_OP_0           /* || */
-%left               T_BINARY_OP_1           /* && */
-%left               T_BINARY_OP_2           /* == != */
-%left               T_TYPE_OP               /* <~ <~> ~> */
-%left               T_BINARY_OP_3           /* < > <= >= */
-%left               T_BINARY_OP_4           /* | */
-%left               T_BINARY_OP_5           /* ' */
-%left               T_BINARY_OP_6           /* & */
-%left               T_BINARY_OP_7           /* << >> */
-%left               T_BINARY_OP_8 '+' '-'   /* + - */
-%left               T_BINARY_OP_9           /* * / % */
-%right              T_UNARY_OP              /* - ! ¬ */
-%right              T_BINARY_OP_10          /* ^ */
-%right              T_BINARY_OP_11 '['      /* [] */
-%right              T_TERNARY_OP_1          /* [=] */
-%left               T_FUNCTION_OP '('       /* () */
+%left               T_TERNARY_OP_0              /* ?: */
+%left               T_BINARY_OP_0               /* || */
+%left               T_BINARY_OP_1               /* && */
+%left               T_BINARY_OP_2               /* == != */
+%left               T_TYPE_OP                   /* <~ <~> ~> */
+%left               T_BINARY_OP_3               /* < > <= >= */
+%left               T_BINARY_OP_4               /* | */
+%left               T_BINARY_OP_5               /* ' */
+%left               T_BINARY_OP_6               /* & */
+%left               T_BINARY_OP_7               /* << >> */
+%left               T_BINARY_OP_8 '+' '-'       /* + - */
+%left               T_BINARY_OP_9 '/' '*' '%'   /* * / % */
+%right              T_UNARY_OP                  /* - ! ¬ */
+%right              T_BINARY_OP_10              /* ^ */
+%right              T_BINARY_OP_11 '['          /* [] */
+%right              T_TERNARY_OP_1              /* [=] */
+%left               T_FUNCTION_OP '('           /* () */
 
 /***************************************************************
 * Types
@@ -149,7 +149,7 @@ type : T_INT                                                        { $$ = alloc
 * Expressions
 ***************************************************************/
 
-expr : t_expr T_TERNARY_OP_0 expr ':' expr                          { $$ = alloc_node( NODE_TERNARY_OP, $2 );
+expr : t_expr T_TERNARY_OP_0 expr ':' expr                          { $$ = alloc_node( NODE_TERNARY_OP, 0 );
                                                                       push_back( $$, $1 );
                                                                       push_back( $$, $3 );
                                                                       push_back( $$, $5 ); }
@@ -171,18 +171,22 @@ t_expr : T_INT_LITERAL                                              { $$ = alloc
        | t_expr T_BINARY_OP_7 t_expr                                { $$ = alloc_binary_node( $2, $1, $3 ); }
        | t_expr '+' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_ADD, $1, $3 ); }
        | t_expr '-' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_SUB, $1, $3 ); }
-       | t_expr T_BINARY_OP_9 t_expr                                { $$ = alloc_binary_node( $2, $1, $3 ); }
+       | t_expr '/' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_DIV, $1, $3 ); }
+       | t_expr '*' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_MUL, $1, $3 ); }
+       | t_expr '%' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_MOD, $1, $3 ); }
        | t_expr T_BINARY_OP_10 t_expr                               { $$ = alloc_binary_node( $2, $1, $3 ); }
-       | t_expr '[' expr ']'                                        { $$ = alloc_binary_node( BINARY_OP_TUPLE_EXTRACT, $1, $3 ); }
+       | t_expr '[' T_INT_LITERAL ']'                               { $$ = alloc_node( NODE_TUPLE_EXTRACT, 0 );
+                                                                      push_back( $$, $1 );
+                                                                      $$->int_data = $3; }
        | T_UNARY_OP t_expr                                          { $$ = alloc_node( NODE_UNARY_OP, $1 );
                                                                       push_back( $$, $2 ); }
        | '-' t_expr %prec T_UNARY_OP                                { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_NEGATION );
                                                                       push_back( $$, $2 ); }
        | '[' expr ']' %prec T_UNARY_OP                              { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_FLOOR );
                                                                       push_back( $$, $2 ); }
-       | t_expr '[' expr '=' expr ']'                               { $$ = alloc_node( NODE_TERNARY_OP, TERNARY_OP_TUPLE_REPLACE );
+       | t_expr '[' T_INT_LITERAL '/' expr ']'                      { $$ = alloc_node( NODE_TUPLE_REPLACE, 0 );
                                                                       push_back( $$, $1 );
-                                                                      push_back( $$, $3 );
+                                                                      $$->int_data = $3;
                                                                       push_back( $$, $5 ); }
        | type T_TYPE_OP type                                        { $$ = alloc_typeop_node( $2, $1, $3 ); }
        | t_expr T_TYPE_OP type                                      { $$ = alloc_typeop_node( $2, $1, $3 ); }
@@ -429,8 +433,7 @@ type : type T_FUNCTION error                                        { $$ = error
 expr : t_expr T_TERNARY_OP_0 expr error expr                        { $$ = error( "expected ':'" ); }
      ;
      
-t_expr : t_expr '[' error ']'                                       { $$ = error( "expected expression" ); }
-       | t_expr '[' expr error                                      { $$ = error( "expected ']'" ); }
+t_expr : t_expr '[' error ']'                                       { $$ = error( "expected literal" ); }
        | '[' error ']' %prec T_UNARY_OP                             { $$ = error( "expected expression" ); }
        | '[' expr error %prec T_UNARY_OP                            { $$ = error( "expected ']'" ); }
        | '(' error ')'                                              { $$ = error( "expected expression" ); }

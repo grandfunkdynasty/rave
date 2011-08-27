@@ -789,10 +789,6 @@
 			>
 		</File>
 		<File
-			RelativePath=".\GRAMMAR.TXT"
-			>
-		</File>
-		<File
 			RelativePath=".\main.cpp"
 			>
 		</File>

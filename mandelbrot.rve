@@ -29,7 +29,7 @@ float f( int i ) 1.0 * i;
 
 int get( ( int, int ) t, int i )
 {
-    t[ get( t, i ) ];
+    t[ 1 ];
 }
 
 int i( int a )
@@ -61,6 +61,17 @@ test( float function( int a ) arg )
     int ~i;
     local ~f function( ~i ) ~i2f;
     local ~i function( ~i ) ~i2i;
+}
+
+int function( int, int )~boo;
+float function( int )~foo;
+( float, float ) test2( ( int, float ) a )
+{
+    a[ 0 / 1.0 ];
+}
+~foo test3( ~boo f )
+{
+    conv( f( 1 ) );
 }
 
 video Mandelbrot 1: {

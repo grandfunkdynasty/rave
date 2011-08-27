@@ -13,6 +13,8 @@
     X( UnaryOp );           \
     X( TypeOp );            \
     X( TupleConstruct );    \
+    X( TupleExtract );      \
+    X( TupleReplace );      \
     X( FunctionCall );      \
     X( Body );              \
     X( Return );            \

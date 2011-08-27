@@ -55,29 +55,18 @@ IMPLEMENT( Identifier )
 
 IMPLEMENT( TernaryOp )
 {
-    if ( arg._type == TERNARY_OP_TERNARY ) {
-        _result << "(";
-        Operate( arg._expr );
-        _result << " ? ";
-        Operate( arg._left );
-        _result << " : ";
-        Operate( arg._right );
-        _result << ")";
-    }
-    else if ( arg._type == TERNARY_OP_TUPLE_REPLACE ) {
-        Operate( arg._expr );
-        _result << "[";
-        Operate( arg._left );
-        _result << " = ";
-        Operate( arg._right );
-        _result << "]";
-    }
+    _result << "(";
+    Operate( arg._expr );
+    _result << " ? ";
+    Operate( arg._left );
+    _result << " : ";
+    Operate( arg._right );
+    _result << ")";
 }
 
 IMPLEMENT( BinaryOp )
 {
-    if ( arg._type != BINARY_OP_TUPLE_EXTRACT )
-        _result << "(";
+    _result << "(";
     Operate( arg._left );
     _result << ( arg._type == BINARY_OP_OR ? " || " :
                  arg._type == BINARY_OP_AND ? " && " :
@@ -97,13 +86,9 @@ IMPLEMENT( BinaryOp )
                  arg._type == BINARY_OP_MUL ? " * " :
                  arg._type == BINARY_OP_DIV ? " / " :
                  arg._type == BINARY_OP_MOD ? " % " :
-                 arg._type == BINARY_OP_EXP ? "^" :
-                 arg._type == BINARY_OP_TUPLE_EXTRACT ? "[" : "" );
+                 arg._type == BINARY_OP_EXP ? "^" : "" );
     Operate( arg._right );
-    if ( arg._type == BINARY_OP_TUPLE_EXTRACT )
-        _result << "]";
-    else
-        _result << ")";
+    _result << ")";
 }
 
 IMPLEMENT( UnaryOp )
@@ -145,6 +130,21 @@ IMPLEMENT( TupleConstruct )
         first = false;
     }
     _result << ")";
+}
+
+IMPLEMENT( TupleExtract )
+{
+    Operate( arg._tuple );
+    _result << "[" << arg._index << "]";
+}
+
+
+IMPLEMENT( TupleReplace )
+{
+    Operate( arg._tuple );
+    _result << "[" << arg._index << " / ";
+    Operate( arg._expr );
+    _result << "]";
 }
 
 IMPLEMENT( FunctionCall )

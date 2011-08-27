@@ -198,7 +198,7 @@ Ast* construct( Node* node, bool helper )
                              construct( t->next->elem ) );
     // Ternary operator
     if ( type == NODE_TERNARY_OP )
-        return new TernaryOp( sub_type, construct( t->elem ),
+        return new TernaryOp( construct( t->elem ),
                               construct( t->next->elem ),
                               construct( t->next->next->elem ) );
 
@@ -227,6 +227,13 @@ Ast* construct( Node* node, bool helper )
             list.push_back( construct( t->elem ) );
         return new TupleConstruct( list );
     }
+
+    if ( type == NODE_TUPLE_EXTRACT )
+        return new TupleExtract( construct( t->elem ), node->int_data );
+
+    if ( type == NODE_TUPLE_REPLACE )
+        return new TupleReplace( construct( t->elem ), node->int_data,
+                                 construct( t->next->elem ) );
 
     // Function call
     if ( type == NODE_FUNCTION_CALL ) {

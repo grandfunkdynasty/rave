@@ -114,14 +114,13 @@ private:
 class TernaryOp : public Ast {
 public:
 
-    TernaryOp( int type, Ast* condition, Ast* left, Ast* right );
+    TernaryOp( Ast* condition, Ast* left, Ast* right );
     virtual ~TernaryOp();
 
     ACCEPT( TernaryOp );
 
 private:
 
-    int _type;
     Ast* _expr;
     Ast* _left;
     Ast* _right;
@@ -143,6 +142,45 @@ public:
 private:
 
     AstList _list;
+
+};
+
+/***************************************************************
+* Tuple extraction
+***************************************************************/
+
+class TupleExtract : public Ast {
+public:
+
+    TupleExtract( Ast* tuple, rave_int index );
+    virtual ~TupleExtract();
+
+    ACCEPT( TupleExtract );
+
+private:
+
+    Ast* _tuple;
+    rave_int _index;
+
+};
+
+/***************************************************************
+* Tuple replacement
+***************************************************************/
+
+class TupleReplace : public Ast {
+public:
+
+    TupleReplace( Ast* tuple, rave_int index, Ast* expr );
+    virtual ~TupleReplace();
+
+    ACCEPT( TupleReplace );
+
+private:
+
+    Ast* _tuple;
+    rave_int _index;
+    Ast* _expr;
 
 };
 

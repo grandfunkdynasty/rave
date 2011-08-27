@@ -36,7 +36,6 @@ void StaticOperator::Error( const Ast& arg, const std::string& text )
 * Implementations
 ***************************************************************/
 // TODO: insert int-to-float casts
-// TODO: can't do constant analysis, change to constants
 
 IMPLEMENT( Constant )
 {
@@ -59,28 +58,12 @@ IMPLEMENT( TernaryOp )
     Operate( arg._right );
     Type right = _type;
 
-    if ( arg._type == TERNARY_OP_TERNARY ) {
-        if ( !expr.ConvertsTo( Type::Int() ) && expr != Type::Void() )
-            Error( arg, "cannot apply '?' to '" + expr.Typename() + "'" );
-        _type = left.Generalise( right );
-        if ( _type == Type::Void() && left != Type::Void() && right != Type::Void() )
-            Error( arg, "'?': cannot generalise '" + left.Typename() +
-                   "' with '" + right.Typename() + "'" );
-    }
-    else if ( arg._type == TERNARY_OP_TUPLE_REPLACE ) {
-        if ( !expr.IsTuple() && expr != Type::Void() )
-            Error( arg, "cannot apply '[=]' to '" + expr.Typename() + "'" );
-        // TODO: constant-index checking
-        if ( !left.ConvertsTo( Type::Int() ) && left != Type::Void() )
-            Error( arg, "'[=]': cannot convert '" + left.Typename() +
-                   "' to '" + Type::Int().Typename() + "'" );
-        // TODO: tuple-arg-assignment type checking
-        _type = expr;
-    }
-    else {
-        Error( arg, "unsupported ternary operation" );
-        _type = Type::Void();
-    }
+    if ( !expr.ConvertsTo( Type::Int() ) && expr != Type::Void() )
+        Error( arg, "cannot apply '?' to '" + expr.Typename() + "'" );
+    _type = left.Generalise( right );
+    if ( _type == Type::Void() && left != Type::Void() && right != Type::Void() )
+        Error( arg, "'?': cannot generalise '" + left.Typename() +
+               "' with '" + right.Typename() + "'" );
 }
 
 IMPLEMENT( BinaryOp )
@@ -109,23 +92,9 @@ IMPLEMENT( BinaryOp )
           arg._type == BINARY_OP_MUL ? "*" :
           arg._type == BINARY_OP_DIV ? "/" :
           arg._type == BINARY_OP_MOD ? "%" :
-          arg._type == BINARY_OP_EXP ? "^" :
-          arg._type == BINARY_OP_TUPLE_EXTRACT ? "[]" : "" );
+          arg._type == BINARY_OP_EXP ? "^" : "" );
 
-    if ( arg._type == BINARY_OP_TUPLE_EXTRACT ) {
-        if ( !left.IsTuple() && left != Type::Void() )
-            Error( arg, "cannot apply '" + op + "' to '" + left.Typename() + "'" );
-        // TODO: constant-index checking
-        if ( !right.ConvertsTo( Type::Int() ) && right != Type::Void() )
-            Error( arg, "'" + op + "': cannot convert '" + right.Typename() +
-                   "' to '" + Type::Int().Typename() + "'" );
-        // TODO: tuple-arg-type extraction
-        if ( left.IsTuple() )
-            _type = Type::Void();
-        else
-            _type = Type::Void();
-    }
-    else if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ||
+    if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ||
               arg._type == BINARY_OP_BIT_OR || arg._type == BINARY_OP_BIT_AND ||
               arg._type == BINARY_OP_BIT_XOR ||
               arg._type == BINARY_OP_LSHIFT || arg._type == BINARY_OP_RSHIFT ) {
@@ -218,6 +187,57 @@ IMPLEMENT( TupleConstruct )
         Operate( arg._list[ i ] );
         list.push_back( _type );
     }
+    _type = Type::Tuple( list );
+}
+
+IMPLEMENT( TupleExtract )
+{
+    Operate( arg._tuple );
+    if ( _type == Type::Void() )
+        return;
+
+    if ( !_type.IsTuple() ) {
+        Error( arg, "cannot apply '[]' to '" + _type.Typename() + "'" );
+        _type = Type::Void();
+        return;
+    }
+    if ( arg._index < 0 || arg._index >= _type.TypeArgs().size() ) {
+        std::stringstream ss;
+        ss << "cannot apply '[" << arg._index << "]' to '" << _type.Typename() << "'";
+        Error( arg, ss.str() );
+        _type = Type::Void();
+        return;
+    }
+    _type = _type.TypeArgs()[ arg._index ];
+}
+
+IMPLEMENT( TupleReplace )
+{
+    Operate( arg._tuple );
+    Type tuple = _type;
+    Operate( arg._expr );
+    Type expr = _type;
+
+    if ( tuple == Type::Void() ) {
+        _type = Type::Void();
+        return;
+    }
+
+    if ( !tuple.IsTuple() ) {
+        Error( arg, "cannot apply '[/]' to '" + tuple.Typename() + "'" );
+        _type = tuple;
+        return;
+    }
+    if ( arg._index < 0 || arg._index >= tuple.TypeArgs().size() ) {
+        std::stringstream ss;
+        ss << "cannot apply '[" << arg._index << "/]' to '" << tuple.Typename() << "'";
+        Error( arg, ss.str() );
+        _type = tuple;
+        return;
+    }
+    Type::TypeList list;
+    for ( std::size_t i = 0; i < tuple.TypeArgs().size(); ++i )
+        list.push_back( i == arg._index ? expr : tuple.TypeArgs()[ i ] );
     _type = Type::Tuple( list );
 }
 

@@ -238,7 +238,6 @@ use {
     ***************************************************************/
 
 "?" {
-    yylval.type = TERNARY_OP_TERNARY;
     return T_TERNARY_OP_0;
 }
 
@@ -320,21 +319,6 @@ use {
 ">>" {
     yylval.type = BINARY_OP_RSHIFT;
     return T_BINARY_OP_7;
-}
-
-"*" {
-    yylval.type = BINARY_OP_MUL;
-    return T_BINARY_OP_9;
-}
-
-"/" {
-    yylval.type = BINARY_OP_DIV;
-    return T_BINARY_OP_9;
-}
-
-"%" {
-    yylval.type = BINARY_OP_MOD;
-    return T_BINARY_OP_9;
 }
 
 "!" {

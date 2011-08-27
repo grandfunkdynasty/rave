@@ -19,6 +19,8 @@ enum NodeType {
     NODE_UNARY_OP,
     NODE_TYPE_OP,
     NODE_TUPLE_CONSTRUCT,
+    NODE_TUPLE_EXTRACT,
+    NODE_TUPLE_REPLACE,
     NODE_FUNCTION_CALL,
 
     // Functions and sequences
@@ -55,10 +57,6 @@ enum NodeSubType {
     LITERAL_INT = 1,
     LITERAL_FLOAT,
 
-    // Ternary operator types
-    TERNARY_OP_TERNARY = 1,
-    TERNARY_OP_TUPLE_REPLACE,
-
     // Binary operator types
     BINARY_OP_OR = 1,
     BINARY_OP_AND,
@@ -79,7 +77,6 @@ enum NodeSubType {
     BINARY_OP_DIV,
     BINARY_OP_MOD,
     BINARY_OP_EXP,
-    BINARY_OP_TUPLE_EXTRACT,
 
     // Unary operator types
     UNARY_OP_NOT = 1,

@@ -117,9 +117,8 @@ TypeOp::~TypeOp()
 * Ternary operator
 ***************************************************************/
 
-TernaryOp::TernaryOp( int type, Ast* expr, Ast* left, Ast* right )
-: _type( type )
-, _expr( expr )
+TernaryOp::TernaryOp( Ast* expr, Ast* left, Ast* right )
+: _expr( expr )
 , _left( left )
 , _right( right )
 {
@@ -145,6 +144,38 @@ TupleConstruct::~TupleConstruct()
 {
     for ( std::size_t i = 0; i < _list.size(); ++i )
         delete _list[ i ];
+}
+
+/***************************************************************
+* Tuple extraction
+***************************************************************/
+
+TupleExtract::TupleExtract( Ast* tuple, rave_int index )
+: _tuple( tuple )
+, _index( index )
+{
+}
+
+TupleExtract::~TupleExtract()
+{
+    delete _tuple;
+}
+
+/***************************************************************
+* Tuple replacement
+***************************************************************/
+
+TupleReplace::TupleReplace( Ast* tuple, rave_int index, Ast* expr )
+: _tuple( tuple )
+, _index( index )
+, _expr( expr )
+{
+}
+
+TupleReplace::~TupleReplace()
+{
+    delete _tuple;
+    delete _expr;
 }
 
 /***************************************************************

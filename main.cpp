@@ -11,7 +11,7 @@ int main( int argc, char** argv )
         return 1;
 
     int errors = 0;
-    std::cout << "checking semantics...";
+    std::cout << "analysing...";
     TypeOperator otype( &errors );
     otype.Operate( ast );
 
