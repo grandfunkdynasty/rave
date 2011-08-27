@@ -96,6 +96,17 @@ IMPLEMENT( TupleConstruct )
         Operate( arg._list[ i ] );
 }
 
+IMPLEMENT( TupleExtract )
+{
+    Operate( arg._tuple );
+}
+
+IMPLEMENT( TupleReplace )
+{
+    Operate( arg._tuple );
+    Operate( arg._expr );
+}
+
 IMPLEMENT( FunctionCall )
 {
     Operate( arg._function );
