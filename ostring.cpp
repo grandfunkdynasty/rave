@@ -161,6 +161,13 @@ IMPLEMENT( FunctionCall )
     _result << ")";
 }
 
+IMPLEMENT( Promoter )
+{
+    _result << arg._to.Typename() << "(";
+    Operate( arg._expr );
+    _result << ")";
+}
+
 IMPLEMENT( Body )
 {
     _result << "{\n";

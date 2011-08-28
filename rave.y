@@ -96,7 +96,7 @@ struct Node* error( const char* text )
 %left               T_BINARY_OP_7               /* << >> */
 %left               T_BINARY_OP_8 '+' '-'       /* + - */
 %left               T_BINARY_OP_9 '/' '*' '%'   /* * / % */
-%right              T_UNARY_OP                  /* - ! ¬ */
+%right              T_UNARY_OP                  /* - ! \ */
 %right              T_BINARY_OP_10              /* ^ */
 %right              T_BINARY_OP_11 '['          /* [] */
 %right              T_TERNARY_OP_1              /* [=] */
@@ -106,9 +106,9 @@ struct Node* error( const char* text )
 * Types
 ***************************************************************/
 
-%type <integer>     modifier_list modifier
+%type <integer>     modifier_list modifier layer_type
 %type <node>        type_args type_args_list type expr t_expr expr_list body body_list
-%type <node>        layer layer_optional_fx layer_list statement o_statement c_statement statement_list scope_def_list scope_def
+%type <node>        layer layer_optional_expr layer_optional_fx layer_list statement o_statement c_statement statement_list scope_def_list scope_def
 %type <node>        argument_def argument_list func_def seq_def vid_def type_def program_scope program
 %start program
 
@@ -234,25 +234,28 @@ body_list : body_list body                                          { $$ = $1;
 /***************************************************************
 * Layers
 ***************************************************************/
-     
-layer : T_LAYER expr layer_optional_fx ':' statement                { $$ = alloc_node( NODE_LAYER, LAYER_LAYER | ( $3 ? LAYER_FX : 0 ) );
-                                                                      push_back( $$, $2 );
-                                                                      if ( $3 )
-                                                                          push_back( $$, $3 );
-                                                                      push_back( $$, $5 ); }
-      | T_COPY expr layer_optional_fx ':' statement                 { $$ = alloc_node( NODE_LAYER, LAYER_COPY | ( $3 ? LAYER_FX : 0 ) );
-                                                                      push_back( $$, $2 );
-                                                                      if ( $3 )
-                                                                          push_back( $$, $3 );
-                                                                      push_back( $$, $5 ); }
-      | T_BASE ':' statement                                        { $$ = alloc_node( NODE_LAYER, LAYER_BASE );
-                                                                      push_back( $$, $3 ); }
-      ;
-      
+
+layer_type : T_LAYER                                                { $$ = LAYER_LAYER; }
+           | T_COPY                                                 { $$ = LAYER_COPY; }
+           | T_BASE                                                 { $$ = LAYER_BASE; }
+           ;
+           
+layer_optional_expr : expr
+                    |                                               { $$ = 0; }
+                    ;
+                    
 layer_optional_fx : T_MERGE expr                                    { $$ = $2; }
-         |                                                          { $$ = 0; }
-         ;
-         
+                  |                                                 { $$ = 0; }
+                  ;
+
+layer : layer_type layer_optional_expr layer_optional_fx ':'
+        statement                                                   { $$ = alloc_node( NODE_LAYER, $1 | ( $3 ? LAYER_FX : 0 ) );
+                                                                      if ( $2 )
+                                                                          push_back( $$, $2 );
+                                                                      if ( $3 )
+                                                                          push_back( $$, $3 );
+                                                                      push_back( $$, $5 ); }
+
 layer_list : layer_list layer                                       { $$ = $1;
                                                                       push_back( $$, $2 ); }
            |                                                        { $$ = alloc_node( NODE_UNDEFINED, 0 ); }
@@ -450,14 +453,7 @@ body : '{' error '}'                                                { $$ = error
      | T_ID '=' expr error body                                     { $$ = error( "expected ':'" ); }
      ;
      
-layer : T_LAYER error statement                                     { $$ = error( "expected expression" ); }
-      | T_LAYER expr layer_optional_fx error statement              { $$ = error( "expected ':'" ); }
-      | T_LAYER expr layer_optional_fx ':' error                    { $$ = error( "expected statement" ); }
-      | T_COPY error statement                                      { $$ = error( "expected expression" ); }
-      | T_COPY expr layer_optional_fx error statement               { $$ = error( "expected ':'" ); }
-      | T_COPY expr layer_optional_fx ':' error                     { $$ = error( "expected statement" ); }
-      | T_BASE error statement                                      { $$ = error( "expected ':'" ); }
-      | T_BASE ':' error                                            { $$ = error( "expected statement" ); }
+layer : layer_type error statement                                  { $$ = error( "expected layer" ); }
       ;
       
 layer_optional_fx : T_MERGE error                                   { $$ = error( "expected expression" ); }

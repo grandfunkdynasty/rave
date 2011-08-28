@@ -194,3 +194,18 @@ FunctionCall::~FunctionCall()
     for ( std::size_t i = 0; i < _args.size(); ++i )
         delete _args[ i ];
 }
+
+/***************************************************************
+* Promote
+***************************************************************/
+
+Promoter::Promoter( Ast* expr, Type to )
+: _expr( expr )
+, _to( to )
+{
+}
+
+Promoter::~Promoter()
+{
+    delete _expr;
+}

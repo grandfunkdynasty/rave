@@ -203,4 +203,23 @@ private:
 
 };
 
+/***************************************************************
+* Promote
+***************************************************************/
+
+class Promoter : public Ast {
+public:
+
+    Promoter( Ast* expr, Type to );
+    virtual ~Promoter();
+
+    ACCEPT( Promoter );
+
+private:
+
+    Ast* _expr;
+    Type _to;
+
+};
+
 #endif

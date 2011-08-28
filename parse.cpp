@@ -228,9 +228,11 @@ Ast* construct( Node* node, bool helper )
         return new TupleConstruct( list );
     }
 
+    // Tuple extraction
     if ( type == NODE_TUPLE_EXTRACT )
         return new TupleExtract( construct( t->elem ), node->int_data );
 
+    // Tuple replacement
     if ( type == NODE_TUPLE_REPLACE )
         return new TupleReplace( construct( t->elem ), node->int_data,
                                  construct( t->next->elem ) );
@@ -322,7 +324,9 @@ Ast* construct( Node* node, bool helper )
         if ( t == node->end )
             return new Layer( node->sub_type, construct( t->elem ) );
         if ( t->next == node->end )
-            return new Layer( node->sub_type, construct( t->elem ), construct( t->next->elem ) );
+            return node->sub_type & LAYER_FX ?
+            new Layer( node->sub_type, 0, construct( t->elem ), construct( t->next->elem ) ) :
+            new Layer( node->sub_type, construct( t->elem ), construct( t->next->elem ) );
         return new Layer( node->sub_type, construct( t->elem ), construct( t->next->elem ),
                           construct( t->next->next->elem ) );
     }

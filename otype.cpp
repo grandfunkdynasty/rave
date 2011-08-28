@@ -114,6 +114,12 @@ IMPLEMENT( FunctionCall )
         Operate( arg._args[ i ] );
 }
 
+IMPLEMENT( Promoter )
+{
+    Operate( arg._expr );
+    arg._to = Resolve( arg, arg._to );
+}
+
 IMPLEMENT( Body )
 {
     for ( std::size_t i = 0; i < arg._steps.size(); ++i )

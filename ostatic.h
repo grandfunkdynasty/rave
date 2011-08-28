@@ -4,18 +4,20 @@
 #include "operator.h"
 #include "symbol.h"
 
-class StaticOperator : public ConstOperator {
+class StaticOperator : public Operator {
 public:
 
     StaticOperator( int* errors );
     ~StaticOperator();
 
-    CONST_OPERATOR;
+    OPERATOR;
 
 private:
 
     void Error( const Ast& arg, const std::string& text );
     int* _errors;
+
+    Ast* Promote( Ast* expr, Type from, Type to );
 
     Type _type;
     Type _return_type;
