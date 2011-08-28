@@ -49,6 +49,11 @@ Ast* StaticOperator::Promote( Ast* expr, Type from, Type to )
 * Implementations
 ***************************************************************/
 
+IMPLEMENT( ParseError )
+{
+    _type = Type::Void();
+}
+
 IMPLEMENT( Constant )
 {
     _type = arg._is_int ? Type::Int() : Type::Float();
@@ -156,7 +161,7 @@ IMPLEMENT( BinaryOp )
         if ( ( !left.ConvertsTo( Type::Int() ) && !left.ConvertsTo( Type::Float() ) &&
                left != Type::Void() ) ||
              ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) &&
-             right != Type::Void() ) ) {
+               right != Type::Void() ) ) {
             Error( arg, "cannot apply '" + op + "' to '" +
                    left.Typename() + "', '" + right.Typename() + "'" );
             _type = Type::Float();
@@ -584,6 +589,8 @@ IMPLEMENT( VidDef )
         Error( arg, "'cache' modifier illegal on video definitions" );
     if ( arg._modifiers & MODIFIER_LOCAL )
         Error( arg, "'local' modifier illegal on video definitions" );
+    if ( !_table.AddEntry( "video::" + arg._id, Type::Sequence( Type::TypeList() ) ) )
+        Error( arg, "video '" + arg._id + "' already defined" );
     Operate( arg._frame_count );
     if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
         Error( arg, "frame count: cannot convert '" + _type.Typename() +

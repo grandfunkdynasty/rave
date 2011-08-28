@@ -6,6 +6,7 @@
 ***************************************************************/
 
 #define CLASS_LIST( X )     \
+    X( ParseError );        \
     X( Constant );          \
     X( Identifier );        \
     X( TernaryOp );         \

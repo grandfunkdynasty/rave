@@ -79,6 +79,7 @@ video Mandelbrot 1: {
 	fx: mandelbrotEffect( 4 + ( t <= 64 ? t : 128 - t ) );
 	test( conv( i ) );
 	fx: boo;
+	lol = test2( ( 2, 2 ) ):
 	split: {
 	    layer 1: test( conv( i ) );
 	    base: test( conv( i ) );

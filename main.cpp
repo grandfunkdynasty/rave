@@ -6,12 +6,10 @@
 
 int main( int argc, char** argv )
 {
-    Ast* ast = parse( argv[ 1 ] );
-    if ( !ast )
-        return 1;
-
     int errors = 0;
-    std::cout << "analysing...";
+    parse_set_error( &errors );
+    Ast* ast = parse( argv[ 1 ] );
+
     TypeOperator otype( &errors );
     otype.Operate( ast );
 

@@ -56,6 +56,7 @@ Type TypeOperator::Resolve( const Ast& arg, const Type& type )
 * Implementations
 ***************************************************************/
 
+IMPLEMENT_EMPTY( ParseError );
 IMPLEMENT_EMPTY( Constant );
 IMPLEMENT_EMPTY( Identifier );
 

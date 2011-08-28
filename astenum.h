@@ -7,6 +7,7 @@
 
 enum NodeType {
     NODE_UNDEFINED,
+    NODE_ERROR,
 
     // Types
     NODE_TYPE,

@@ -423,106 +423,294 @@ program : program_scope                                             { $$ = $1;
 * Error handling
 ***************************************************************/
 
-type_args : '(' error ')'                                           { $$ = error( "expected type list" ); }
-          | '(' type_args_list error                                { $$ = error( "expected ')'" ); }
+type_args : '(' error ')'                                           { error( "expected type list" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
+          | '(' type_args_list error                                { error( "expected ')'" );
+                                                                      $$ = $2; }
           ;
           
-type : type T_FUNCTION error                                        { $$ = error( "expected '('" ); }
-     | T_SEQUENCE error                                             { $$ = error( "expected '('" ); }
-     | '(' type type_args_optional_id error ')'                     { $$ = error( "expected ','" ); }
-     | '~' error                                                    { $$ = error( "expected identifier" ); }
+type : type T_FUNCTION error                                        { error( "expected '('" );
+                                                                      $$ = alloc_node( NODE_TYPE, TYPE_FUNCTION );
+                                                                      push_front( $$, $1 ); }
+     | T_SEQUENCE error                                             { $$ = error( "expected '('" );
+                                                                      $$ = alloc_node( NODE_TYPE, TYPE_SEQUENCE ); }
+     | '(' type type_args_optional_id error ')'                     { error( "expected ','" );
+                                                                      $$ = $2; }
+     | '~' error                                                    { $$ = error( "expected identifier" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
      ;
      
-expr : t_expr T_TERNARY_OP_0 expr error expr                        { $$ = error( "expected ':'" ); }
+expr : t_expr T_TERNARY_OP_0 expr error expr                        { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_TERNARY_OP, 0 );
+                                                                      push_back( $$, $1 );
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, $5 ); }
      ;
      
-t_expr : t_expr '[' error ']'                                       { $$ = error( "expected literal" ); }
-       | '[' error ']' %prec T_UNARY_OP                             { $$ = error( "expected expression" ); }
-       | '[' expr error %prec T_UNARY_OP                            { $$ = error( "expected ']'" ); }
-       | '(' error ')'                                              { $$ = error( "expected expression" ); }
-       | t_expr '(' error ')'                                       { $$ = error( "expected argument list" ); }
-       | t_expr '(' expr_list error                                 { $$ = error( "expected ')'" ); }
-       | '(' expr error                                             { $$ = error( "expected ')'" ); }
-       | '(' expr ',' error ')'                                     { $$ = error( "expected expression" ); }
-       | '(' expr ',' expr_list error                               { $$ = error( "expected ')'" ); }
+t_expr : t_expr '[' error ']'                                       { error( "expected literal" );
+                                                                      $$ = alloc_node( NODE_TUPLE_EXTRACT, 0 );
+                                                                      $$->int_data = 0;
+                                                                      push_back( $$, $1 ); }
+       | '[' error ']' %prec T_UNARY_OP                             { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_FLOOR );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+       | '[' expr error %prec T_UNARY_OP                            { error( "expected ']'" );
+                                                                      $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_FLOOR );
+                                                                      push_back( $$, $2 ); }
+       | '(' error ')'                                              { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
+       | t_expr '(' error ')'                                       { error( "expected argument list" );
+                                                                      $$ = $1; }
+       | t_expr '(' expr_list error                                 { error( "expected ')'" );
+                                                                      $$ = $3;
+                                                                      set_type( $$, NODE_FUNCTION_CALL, 0 );
+                                                                      push_front( $$, $1 ); }
+       | '(' expr error                                             { error( "expected ')'" );
+                                                                      $$ = $2; }
+       | '(' expr ',' error ')'                                     { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_TUPLE_CONSTRUCT, 0 );
+                                                                      push_back( $$, $2 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+       | '(' expr ',' expr_list error                               { error( "expected ')'" );
+                                                                      $$ = $4;
+                                                                      set_type( $$, NODE_TUPLE_CONSTRUCT, 0 );
+                                                                      push_front( $$, $2 ); }
        ;
        
-body : '{' error '}'                                                { $$ = error( "expected function body" ); }
-     | expr error body                                              { $$ = error( "expected ':'" ); }
-     | T_ID '=' error body                                          { $$ = error( "expected expression" ); }     
-     | T_ID '=' expr error body                                     { $$ = error( "expected ':'" ); }
+body : '{' error '}'                                                { error( "expected function body" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
+     | expr error body                                              { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_GUARD, 0 );
+                                                                      push_back( $$, $1 );
+                                                                      push_back( $$, $3 ); }
+     | T_ID '=' error ':' body                                          { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_LET, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) );
+                                                                      push_back( $$, $5 ); }     
+     | T_ID '=' expr error body                                     { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_LET, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, $5 ); }
      ;
      
-layer : layer_type error statement                                  { $$ = error( "expected layer" ); }
+layer : layer_type error statement                                  { error( "expected layer" );
+                                                                      $$ = alloc_node( NODE_LAYER, $1 );
+                                                                      push_back( $$, $3 ); }
       ;
       
-layer_optional_fx : T_MERGE error                                   { $$ = error( "expected expression" ); }
+layer_optional_fx : T_MERGE error                                   { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
                   ;
                   
-o_statement : T_ID '=' expr error                                   { $$ = error( "expected ':'" ); }
+o_statement : T_ID '=' expr error o_statement                       { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_LET, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, $5 ); }
+            | T_ID '=' error ':' o_statement                        { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_LET, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) );
+                                                                      push_back( $$, $5 ); }
             ;
             
-c_statement : '{' error '}'                                         { $$ = error( "expected block" ); }
-            | expr ':' error                                        { $$ = error( "expected statement" ); }
-            | expr ':' c_statement T_ELSE error                     { $$ = error( "expected ':'" ); }
-            | expr ':' c_statement T_ELSE ':' error                 { $$ = error( "expected statement" ); }
-            | T_ID '=' error                                        { $$ = error( "expected expression" ); }
-            | T_ID '=' expr T_TO expr error                         { $$ = error( "expected ':'" ); }
-            | T_ID '=' expr T_TO expr ':' error                     { $$ = error( "expected statement" ); }
-            | T_ID '=' expr ':' error                               { $$ = error( "expected statement" ); }
-            | t_expr '(' error ')' ';'                              { $$ = error( "expected argument list" ); }
-            | t_expr '(' error ';'                                  { $$ = error( "expected ')'" ); }
-            | t_expr '(' expr_list error ';'                        { $$ = error( "expected ')'" ); }
-            | t_expr '(' ')' error                                  { $$ = error( "expected ';'" ); }
-            | t_expr '(' expr_list ')' error                        { $$ = error( "expected ';'" ); }
-            | T_SPLIT ':' '{' error '}'                             { $$ = error( "expected layer list" ); }
-            | T_SPLIT ':' error '}'                                 { $$ = error( "expected '{'" ); }
-            | T_SPLIT error '}'                                     { $$ = error( "expected ':'" ); }
-            | T_FX ':' error ';'                                    { $$ = error( "expected expression" ); }
-            | T_FX error ';'                                        { $$ = error( "expected ':'" ); }
-            | T_FX ':' expr error                                   { $$ = error( "expected ';'" ); }
+c_statement : '{' error '}'                                         { error( "expected block" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
+            | expr ':' error                                        { error( "expected statement" );
+                                                                      $$ = alloc_node( NODE_GUARD, 0 );
+                                                                      push_back( $$, $1 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+            | expr ':' c_statement T_ELSE error c_statement         { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_GUARD, 0 );
+                                                                      push_back( $$, $1 );
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, $6 ); }
+            | expr ':' c_statement T_ELSE ':' error                 { error( "expected statement" );
+                                                                      $$ = alloc_node( NODE_GUARD, 0 );
+                                                                      push_back( $$, $1 );
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+            | T_ID '=' error ':' c_statement                        { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_LET, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) );
+                                                                      push_back( $$, $5 ); }
+            | T_ID '=' expr T_TO expr error c_statement             { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_LOOP, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, $5 );
+                                                                      push_back( $$, $7 ); }
+            | T_ID '=' expr T_TO expr ':' error                     { error( "expected statement" );
+                                                                      $$ = alloc_node( NODE_LOOP, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, $5 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+            | T_ID '=' expr ':' error                               { error( "expected statement" );
+                                                                      $$ = alloc_node( NODE_LET, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, $3 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+            | t_expr '(' error ')' ';'                              { error( "expected argument list" );
+                                                                      $$ = $1; }
+            | t_expr '(' error ';'                                  { error( "expected ')'" );
+                                                                      $$ = $1; }
+            | t_expr '(' expr_list error ';'                        { error( "expected ')'" );
+                                                                      $$ = $3;
+                                                                      set_type( $$, NODE_SEQUENCE_CALL, 0 );
+                                                                      push_front( $$, $1 ); }
+            | t_expr '(' ')' error                                  { error( "expected ';'" );
+                                                                      $$ = alloc_node( NODE_SEQUENCE_CALL, 0 );
+                                                                      push_front( $$, $1 ); }
+            | t_expr '(' expr_list ')' error                        { error( "expected ';'" );
+                                                                      $$ = $3;
+                                                                      set_type( $$, NODE_SEQUENCE_CALL, 0 );
+                                                                      push_front( $$, $1 ); }
+            | T_SPLIT ':' '{' error '}'                             { error( "expected layer list" );
+                                                                      $$ = alloc_node( NODE_SPLIT, 0 ); }
+            | T_SPLIT ':' error '}'                                 { error( "expected '{'" );
+                                                                      $$ = alloc_node( NODE_SPLIT, 0 ); }
+            | T_SPLIT error '}'                                     { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_SPLIT, 0 );  }
+            | T_FX ':' error ';'                                    { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_FX, 0 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+            | T_FX error ';'                                        { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_FX, 0 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+            | T_FX ':' expr error                                   { error( "expected ';'" );
+                                                                      $$ = alloc_node( NODE_FX, 0 );
+                                                                      push_back( $$, $3 ); }
             ;
             
-scope_def : T_USE error ';'                                         { $$ = error( "expected identifier" ); }
-          | T_USE T_ID error ';'                                    { $$ = error( "expected ':'" ); }
-          | T_USE T_ID ':' error ';'                                { $$ = error( "expected expression" ); }
-          | T_USE T_ID ':' expr error                               { $$ = error( "expected ';'" ); }
+scope_def : T_USE error ';'                                         { error( "expected identifier" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
+          | T_USE T_ID error ';'                                    { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_SCOPE_DEF, 0 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+          | T_USE T_ID ':' error ';'                                { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_SCOPE_DEF, 0 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+          | T_USE T_ID ':' expr error                               { error( "expected ';'" );
+                                                                      $$ = alloc_node( NODE_SCOPE_DEF, 0 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, $4 ); }
           ;
           
-argument_def : type error                                           { $$ = error( "expected identifier" ); }
+argument_def : type error                                           { error( "expected identifier" );
+                                                                      $$ = alloc_node( NODE_ERROR, 0 ); }
              ;
              
-argument_list : argument_list error argument_def                    { $$ = error( "expected ','" ); }
+argument_list : argument_list error argument_def                    { error( "expected ','" );
+                                                                      $$ = $1;
+                                                                      push_back( $$, $3 ); }
               ;
               
-func_def : modifier_list type T_ID '(' error ')' statement          { $$ = error( "expected argument list" ); }
-         | modifier_list type T_ID error statement                  { $$ = error( "expected '('" ); }
-         | modifier_list type T_ID '(' error statement              { $$ = error( "expected ')'" ); }
-         | modifier_list type T_ID '(' argument_list error statement{ $$ = error( "expected ')'" ); }
-         | modifier_list type T_ID '(' ')' error                    { $$ = error( "expected statement" ); }
-         | modifier_list type T_ID '(' argument_list ')' error      { $$ = error( "expected statement" ); }
+func_def : modifier_list type T_ID '(' error ')' body               { error( "expected argument list" );
+                                                                      $$ = alloc_node( NODE_FUNC_DEF, $1 );
+                                                                      push_back( $$, $2 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, $7 ); }
+         | modifier_list type T_ID error body                       { error( "expected '('" );
+                                                                      $$ = alloc_node( NODE_FUNC_DEF, $1 );
+                                                                      push_back( $$, $2 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, $5 ); }
+         | modifier_list type T_ID '(' error body                   { error( "expected ')'" );
+                                                                      $$ = alloc_node( NODE_FUNC_DEF, $1 );
+                                                                      push_back( $$, $2 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, $6 ); }
+         | modifier_list type T_ID '(' argument_list error body     { error( "expected ')'" );
+                                                                      $$ = $5;
+                                                                      set_type( $$, NODE_FUNC_DEF, $1 );
+                                                                      push_front( $$, $2 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, $7 ); }
+         | modifier_list type T_ID '(' ')' error                    { error( "expected statement" );
+                                                                      $$ = alloc_node( NODE_FUNC_DEF, $1 );
+                                                                      push_back( $$, $2 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+         | modifier_list type T_ID '(' argument_list ')' error      { error( "expected statement" );
+                                                                      $$ = $5;
+                                                                      set_type( $$, NODE_FUNC_DEF, $1 );
+                                                                      push_front( $$, $2 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
          ;
          
-seq_def : modifier_list T_ID '(' error ')' statement                { $$ = error( "expected argument list" ); }
-        | modifier_list T_ID error statement                        { $$ = error( "expected '('" ); }
-        | modifier_list T_ID '(' error statement                    { $$ = error( "expected ')'" ); }
-        | modifier_list T_ID '(' argument_list error statement      { $$ = error( "expected ')'" ); }
-        | modifier_list T_ID '(' ')' error                          { $$ = error( "expected statement" ); }
-        | modifier_list T_ID '(' argument_list ')' error            { $$ = error( "expected statement" ); }
+seq_def : modifier_list T_ID '(' error ')' statement                { error( "expected argument list" );
+                                                                      $$ = alloc_node( NODE_SEQ_DEF, $1 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, $6 ); }
+        | modifier_list T_ID error statement                        { error( "expected '('" );
+                                                                      $$ = alloc_node( NODE_SEQ_DEF, $1 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, $4 ); }
+        | modifier_list T_ID '(' error statement                    { error( "expected ')'" );
+                                                                      $$ = alloc_node( NODE_SEQ_DEF, $1 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, $5 ); }
+        | modifier_list T_ID '(' argument_list error statement      { error( "expected ')'" );
+                                                                      $$ = $4;
+                                                                      set_type( $$, NODE_SEQ_DEF, $1 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, $6 ); }
+        | modifier_list T_ID '(' ')' error                          { error( "expected statement" );
+                                                                      $$ = alloc_node( NODE_SEQ_DEF, $1 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
+        | modifier_list T_ID '(' argument_list ')' error            { error( "expected statement" );
+                                                                      $$ = $4;
+                                                                      set_type( $$, NODE_SEQ_DEF, $1 );
+                                                                      $$->string_data = $2;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
         ;
         
-vid_def : modifier_list T_VIDEO error statement                     { $$ = error( "expected identifier" ); }
-        | modifier_list T_VIDEO T_ID error statement                { $$ = error( "expected expression" ); }
-        | modifier_list T_VIDEO T_ID expr error statement           { $$ = error( "expected ':'" ); }
-        | modifier_list T_VIDEO T_ID expr ':' error                 { $$ = error( "expected statement" ); }
+vid_def : modifier_list T_VIDEO error statement                     { error( "expected identifier" );
+                                                                      $$ = alloc_node( NODE_VID_DEF, $1 );
+                                                                      $$->string_data = "unnamed";
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) );
+                                                                      push_back( $$, $4 ); }
+        | modifier_list T_VIDEO T_ID error statement                { error( "expected expression" );
+                                                                      $$ = alloc_node( NODE_VID_DEF, $1 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) );
+                                                                      push_back( $$, $5 ); }
+        | modifier_list T_VIDEO T_ID expr error statement           { error( "expected ':'" );
+                                                                      $$ = alloc_node( NODE_VID_DEF, $1 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, $4 );
+                                                                      push_back( $$, $6 ); }
+        | modifier_list T_VIDEO T_ID expr ':' error                 { error( "expected statement" );
+                                                                      $$ = alloc_node( NODE_VID_DEF, $1 );
+                                                                      $$->string_data = $3;
+                                                                      push_back( $$, $4 );
+                                                                      push_back( $$, alloc_node( NODE_ERROR, 0 ) ); }
         ;
         
-type_def : modifier_list type error ';'                             { $$ = error( "expected '~'" ); }
-         | modifier_list type '~' error ';'                         { $$ = error( "expected identifier" ); }
-         | modifier_list type '~' T_ID error                        { $$ = error( "expected ';'" ); }
+type_def : modifier_list type error ';'                             { error( "expected '~'" );
+                                                                      $$ = alloc_node( NODE_TYPE_DEF, $1 );
+                                                                      $$->string_data = "unnamed";
+                                                                      push_back( $$, $2 ); }
+         | modifier_list type '~' error ';'                         { error( "expected identifier" );
+                                                                      $$ = alloc_node( NODE_TYPE_DEF, $1 );
+                                                                      $$->string_data = "unnamed";
+                                                                      push_back( $$, $2 ); }
+         | modifier_list type '~' T_ID error                        { error( "expected ';'" );
+                                                                      $$ = alloc_node( NODE_TYPE_DEF, $1 );
+                                                                      $$->string_data = $4;
+                                                                      push_back( $$, $2 ); }
          ;
          
-program_scope : program_scope '{' error '}'                         { $$ = error( "expected program" ); }
+program_scope : program_scope '{' error '}'                         { error( "expected program" );
+                                                                      $$ = $1; }
               ;
 
 %%

@@ -40,6 +40,11 @@ std::string modifiers( int modifiers )
 * Implementations
 ***************************************************************/
 
+IMPLEMENT( ParseError )
+{
+    _result << "<<ERROR>>";
+}
+
 IMPLEMENT( Constant )
 {
     if ( arg._is_int )

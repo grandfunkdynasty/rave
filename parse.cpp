@@ -18,7 +18,6 @@ extern "C" {
     extern IncludeList* include_list;
     extern char* yyname;
     Node* parse_tree;
-    int parse_error;
     extern FILE* yyin;
 }
 
@@ -144,6 +143,8 @@ void push_back( Node* parent, Node* child )
 
 Type construct_type( Node* node )
 {
+    if ( node->type == NODE_ERROR )
+        return Type::Void();
     if ( node->sub_type == TYPE_TYPEDEF )
         return Type::Typedef( node->string_data );
     if ( node->sub_type == TYPE_INT )
@@ -177,6 +178,10 @@ Ast* construct( Node* node, bool helper )
     int type = node->type;
     int sub_type = node->sub_type;
     NodeList* t = node->begin;
+
+    // Parse error
+    if ( type == NODE_ERROR )
+        return new ParseError();
 
     // Literal
     if ( type == NODE_LITERAL ) {
@@ -398,7 +403,6 @@ Ast* parse( const std::string& path )
     yyline = 1;
     yyname = ( char* )path.c_str();
     include_depth = 0;
-    parse_error = 0;
     yyin = t;
     yyparse();
 
@@ -409,13 +413,7 @@ Ast* parse( const std::string& path )
         free( t );
     }
     include_list = 0;
-
     fclose( t );
-    if ( parse_error ) {
-        std::cout << parse_error << " error(s) detected.\n";
-        return 0;
-    }
-    std::cout << " success\n";
 
     Ast* parse = construct( parse_tree );
     delete parse_tree;
@@ -426,17 +424,23 @@ Ast* parse( const std::string& path )
 * Errors
 ***************************************************************/
 
+int* parse_errors = 0;
+void parse_set_error( int* errors )
+{
+    parse_errors = errors;
+}
+
 void write_error( const char* name, int line, const char* next, const char* text, int unexpected )
 {
-    if ( !parse_error )
+    if ( !*parse_errors )
         std::cout << "\n";
-    if ( parse_error == 64 )
+    if ( *parse_errors == 64 )
         std::cout << "[more errors...]\n";
-    else if ( parse_error < 64 ) {
+    else if ( *parse_errors < 64 ) {
         std::cout << name << " line " << line << ":\t";
         if ( unexpected )
             std::cout << "unexpected '" << ( *next ? next : "EOF" ) << "': ";
         std::cout << text << "\n";
     }
-    ++parse_error;
+    ++*parse_errors;
 }
