@@ -54,7 +54,7 @@ private:
     }                                                                   \
                                                                         \
     friend void TypeOperator::Operate##type( type& arg );               \
-    friend void StaticOperator::Operate##type( type& arg );       \
+    friend void StaticOperator::Operate##type( type& arg );             \
     friend void StringOperator::Operate##type( const type& arg )
 
 #endif
