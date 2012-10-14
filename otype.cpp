@@ -142,6 +142,7 @@ IMPLEMENT( Guard )
 
 IMPLEMENT( Let )
 {
+    Operate( arg._ids );
     Operate( arg._expr );
     Operate( arg._in );
 }
@@ -166,6 +167,7 @@ IMPLEMENT( ScopeDef )
 
 IMPLEMENT( Loop )
 {
+    Operate( arg._id );
     Operate( arg._begin );
     Operate( arg._end );
     Operate( arg._in );

@@ -752,6 +752,14 @@
 			Name="operators"
 			>
 			<File
+				RelativePath=".\oidentifier.cpp"
+				>
+			</File>
+			<File
+				RelativePath=".\oidentifier.h"
+				>
+			</File>
+			<File
 				RelativePath=".\operator.cpp"
 				>
 			</File>

@@ -67,14 +67,14 @@ private:
 class Let : public Ast {
 public:
 
-    Let( const std::string& id, Ast* expr, Ast* in );
+    Let( Ast* ids, Ast* expr, Ast* in );
     virtual ~Let();
 
     ACCEPT( Let );
 
 private:
 
-    std::string _id;
+    Ast* _ids;
     Ast* _expr;
     Ast* _in;
 
@@ -143,14 +143,14 @@ private:
 class Loop : public Ast {
 public:
 
-    Loop( const std::string& id, Ast* begin, Ast* end, Ast* in );
+    Loop( Ast* id, Ast* begin, Ast* end, Ast* in );
     virtual ~Loop();
 
     ACCEPT( Loop );
 
 private:
 
-    std::string _id;
+    Ast* _id;
     Ast* _begin;
     Ast* _end;
     Ast* _in;

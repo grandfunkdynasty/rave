@@ -14,6 +14,8 @@ StaticOperator::StaticOperator( int* errors )
 , _return_path( false )
 , _declare_globals( false )
 , _declarations( false )
+, _let_variables( false )
+, _let_type( Type::Void() )
 {
 }
 
@@ -61,6 +63,11 @@ IMPLEMENT( Constant )
 
 IMPLEMENT( Identifier )
 {
+    if ( _let_variables ) {
+        if ( !_table.AddEntry( arg._id, _let_type ) )
+            Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
+        return;
+    }
     if ( !_table.HasEntry( arg._id ) )
         Error( arg, "undeclared identifier '" + arg._id + "'" );
     _type = _table.GetEntry( arg._id );
@@ -157,7 +164,7 @@ IMPLEMENT( BinaryOp )
     else if ( arg._type == BINARY_OP_ADD || arg._type == BINARY_OP_SUB ||
               arg._type == BINARY_OP_MUL || arg._type == BINARY_OP_DIV ||
               arg._type == BINARY_OP_MOD || arg._type == BINARY_OP_EXP ) {
-        // TODO: const-checking for illegal operations?
+        // TODO: const-checking for illegal operations? <-- I think that means check for expr/0 etc
         if ( ( !left.ConvertsTo( Type::Int() ) && !left.ConvertsTo( Type::Float() ) &&
                left != Type::Void() ) ||
              ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) &&
@@ -220,6 +227,22 @@ IMPLEMENT( TypeOp )
 
 IMPLEMENT( TupleConstruct )
 {
+    if ( _let_variables ) {
+        Type t = _let_type;
+        if ( !t.IsTuple() )
+            Error( arg, "let variables: " + t.Typename() + " is not a tuple" );
+        else if ( t.TypeArgs().size() != arg._list.size() ) {
+            std::stringstream ss;
+            ss << "let variables: " << t.Typename() << " is not a " << arg._list.size() << "-tuple";
+            Error( arg, ss.str() );
+        }
+        for ( std::size_t i = 0; i < arg._list.size() && i < t.TypeArgs().size() && t.IsTuple(); ++i ) {
+            _let_type = t.TypeArgs()[ i ];
+            Operate( arg._list[ i ] );
+        }
+        _let_type = t;
+        return;
+    }
     Type::TypeList list;
     for ( std::size_t i = 0; i < arg._list.size(); ++i ) {
         Operate( arg._list[ i ] );
@@ -384,8 +407,20 @@ IMPLEMENT( Let )
     bool b = _return_path;
     _return_path = false;
     Operate( arg._expr );
+
     _table.Push();
-    _table.AddEntry( arg._id, _type );
+    IdentifierOperator io;
+    io.Operate( arg._ids );
+    if ( !io.AllIdentifiers() ) {
+        Error( arg, "let variables: must be identifiers" );
+        Operate( arg._ids );
+    }
+    else {
+        _let_variables = true;
+        _let_type = _type;
+        Operate( arg._ids );
+        _let_variables = false;
+    }
     Operate( arg._in );
     _table.Pop();
     _type = Type::Void();
@@ -432,7 +467,18 @@ IMPLEMENT( Loop )
         arg._end = Promote( arg._end, _type, Type::Int() );
 
     _table.Push();
-    _table.AddEntry( arg._id, Type::Int() );
+    IdentifierOperator io;
+    io.Operate( arg._id );
+    if ( !io.AllIdentifiers() || io.Nested() ) {
+        Error( arg, "loop variable: must be identifier" );
+        Operate( arg._id );
+    }
+    else {
+        _let_variables = true;
+        _let_type = Type::Int();
+        Operate( arg._id );
+        _let_variables = false;
+    }
     Operate( arg._in );
     _table.Pop();
     _type = Type::Void();
@@ -524,7 +570,7 @@ IMPLEMENT( Argument )
         return;
     }
     if ( !_table.AddEntry( arg._id, arg._type ) )
-        Error( arg, "identifier '" + arg._id + "' already defined" );
+        Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
     _type = Type::Void();
 }
 
@@ -537,7 +583,7 @@ IMPLEMENT( FuncDef )
         for ( std::size_t i = 0; i < arg._args.size(); ++i )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Function( arg._return_type, _declaration_list ) ) )
-            Error( arg, "identifier '" + arg._id + "' already defined" );
+            Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
         return;
     }
 
@@ -564,7 +610,7 @@ IMPLEMENT( SeqDef )
         for ( std::size_t i = 0; i < arg._args.size(); ++i )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Sequence( _declaration_list ) ) )
-            Error( arg, "identifier '" + arg._id + "' already defined" );
+            Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
         return;
     }
 
@@ -590,7 +636,7 @@ IMPLEMENT( VidDef )
     if ( arg._modifiers & MODIFIER_LOCAL )
         Error( arg, "'local' modifier illegal on video definitions" );
     if ( !_table.AddEntry( "video::" + arg._id, Type::Sequence( Type::TypeList() ) ) )
-        Error( arg, "video '" + arg._id + "' already defined" );
+        Error( arg, "video '" + arg._id + "' already defined in this scope" );
     Operate( arg._frame_count );
     if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
         Error( arg, "frame count: cannot convert '" + _type.Typename() +

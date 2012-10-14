@@ -59,8 +59,8 @@ Guard::~Guard()
 * Let
 ***************************************************************/
 
-Let::Let( const std::string& id, Ast* expr, Ast* in )
-: _id( id )
+Let::Let( Ast* ids, Ast* expr, Ast* in )
+: _ids( ids )
 , _expr( expr )
 , _in( in )
 {
@@ -68,6 +68,7 @@ Let::Let( const std::string& id, Ast* expr, Ast* in )
 
 Let::~Let()
 {
+    delete _ids;
     delete _expr;
     delete _in;
 }
@@ -123,7 +124,7 @@ ScopeDef::~ScopeDef()
 * Loop
 ***************************************************************/
 
-Loop::Loop( const std::string& id, Ast* begin, Ast* end, Ast* in )
+Loop::Loop( Ast* id, Ast* begin, Ast* end, Ast* in )
 : _id( id )
 , _begin( begin )
 , _end( end )
@@ -133,6 +134,7 @@ Loop::Loop( const std::string& id, Ast* begin, Ast* end, Ast* in )
 
 Loop::~Loop()
 {
+    delete _id;
     delete _begin;
     delete _end;
     delete _in;

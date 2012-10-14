@@ -205,7 +205,8 @@ IMPLEMENT( Guard )
 
 IMPLEMENT( Let )
 {
-    _result << arg._id << " = ";
+    Operate( arg._ids );
+    _result << " = ";
     Operate( arg._expr );
     _result << ": ";
     Operate( arg._in );
@@ -243,7 +244,8 @@ IMPLEMENT( ScopeDef )
 
 IMPLEMENT( Loop )
 {
-    _result << arg._id << " = ";
+    Operate( arg._id );
+    _result << " = ";
     Operate( arg._begin );
     _result << " .. ";
     Operate( arg._end );

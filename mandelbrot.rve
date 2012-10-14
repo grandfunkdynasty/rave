@@ -27,10 +27,15 @@ float f( int i ) 1.0 * i;
     }
 }
 
-//int get( ( int, int ) t, int i )
-//{
-//    t[ i ];
-//}
+int sum( ( int, int ) t )
+{
+    ( x, y ) = t: x + y;
+}
+
+int sum2( ( int, int ) t )
+{
+    ( x, y ) = ( t[ 0 ], t[ 1 ] ): x + y;
+}
 
 int i( int a )
 {
