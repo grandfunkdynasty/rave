@@ -27,7 +27,7 @@ private:
     bool _let_variables;
     Type _let_type;
     Type::TypeList _declaration_list;
-    SymbolTable _table;
+    SymbolTable< Type > _table;
 
 };
 

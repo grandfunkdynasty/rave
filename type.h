@@ -11,6 +11,9 @@
 typedef long rave_int;
 typedef double rave_float;
 class Internal;
+namespace llvm {
+    class Type;
+}
 
 /***************************************************************
 * Types
@@ -19,7 +22,7 @@ class Internal;
 class Type {
 public:
 
-    typedef std::vector<Type> TypeList;
+    typedef std::vector< Type > TypeList;
 
     static Type Void();
     static Type Int();
@@ -50,6 +53,8 @@ public:
     const Type& ReturnType() const;
     const TypeList& TypeArgs() const;
 
+    llvm::Type* LlvmType() const;
+
 /***************************************************************
 * Internals
 ***************************************************************/
@@ -69,7 +74,7 @@ private:
     Type( const std::string& name );
     Type( const std::string& name, const Internal& type );
 
-    typedef boost::unordered_set<Internal, Hash> InternalSet;
+    typedef boost::unordered_set< Internal, Hash > InternalSet;
     static InternalSet _type_set;
 
 };

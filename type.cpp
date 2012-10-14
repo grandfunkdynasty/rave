@@ -1,4 +1,8 @@
 #include "type.h"
+#pragma warning(push, 0)
+#include "llvm/DerivedTypes.h"
+#include "llvm/LLVMContext.h"
+#pragma warning(pop)
 
 Type::InternalSet Type::_type_set;
 
@@ -33,6 +37,7 @@ public:
     int RawType() const;
     const Type& ReturnType() const;
     const Type::TypeList& TypeArgs() const;
+    llvm::Type* LlvmType() const;
 
 private:
 
@@ -196,6 +201,11 @@ const Type& Type::ReturnType() const
 const Type::TypeList& Type::TypeArgs() const
 {
     return _type->TypeArgs();
+}
+
+llvm::Type* Type::LlvmType() const
+{
+    return _type->LlvmType();
 }
 
 /***************************************************************
@@ -426,4 +436,16 @@ const Type& Internal::ReturnType() const
 const Type::TypeList& Internal::TypeArgs() const
 {
     return _type_args;
+}
+
+llvm::Type* Internal::LlvmType() const
+{
+    if ( _raw_type == TYPE_VOID )
+        return llvm::Type::getVoidTy( llvm::getGlobalContext() );
+    if ( _raw_type == TYPE_INT )
+        return llvm::Type::getInt32Ty( llvm::getGlobalContext() );
+    if ( _raw_type == TYPE_FLOAT )
+        return llvm::Type::getDoubleTy( llvm::getGlobalContext() );
+    // TODO: map tuple, function, sequence to llvm types
+    return llvm::Type::getVoidTy( llvm::getGlobalContext() );
 }

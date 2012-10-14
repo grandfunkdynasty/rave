@@ -65,7 +65,7 @@ IMPLEMENT( Identifier )
 {
     if ( _let_variables ) {
         if ( !_table.AddEntry( arg._id, _let_type ) )
-            Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
+            Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
         return;
     }
     if ( !_table.HasEntry( arg._id ) )
@@ -90,6 +90,7 @@ IMPLEMENT( TernaryOp )
                "' with '" + right.Typename() + "'" );
     arg._left = Promote( arg._left, left, _type );
     arg._right = Promote( arg._right, right, _type );
+    arg._value_type = _type;
 }
 
 IMPLEMENT( BinaryOp )
@@ -121,9 +122,9 @@ IMPLEMENT( BinaryOp )
           arg._type == BINARY_OP_EXP ? "^" : "" );
 
     if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ||
-              arg._type == BINARY_OP_BIT_OR || arg._type == BINARY_OP_BIT_AND ||
-              arg._type == BINARY_OP_BIT_XOR ||
-              arg._type == BINARY_OP_LSHIFT || arg._type == BINARY_OP_RSHIFT ) {
+         arg._type == BINARY_OP_BIT_OR || arg._type == BINARY_OP_BIT_AND ||
+         arg._type == BINARY_OP_BIT_XOR ||
+         arg._type == BINARY_OP_LSHIFT || arg._type == BINARY_OP_RSHIFT ) {
         if ( !( left.ConvertsTo( Type::Int() ) && left != Type::Void() ) ||
              !( right.ConvertsTo( Type::Int() ) && right != Type::Void() ) )
             Error( arg, "cannot apply '" + op + "' to '" +
@@ -133,10 +134,11 @@ IMPLEMENT( BinaryOp )
             arg._right = Promote( arg._right, right, Type::Int() );
         }
         _type = Type::Int();
+        arg._op_type = Type::Int();
     }
     else if ( arg._type == BINARY_OP_EQ || arg._type == BINARY_OP_NE ) {
         Type type = left.Generalise( right );
-        if ( left.Generalise( right ) == Type::Void() &&
+        if ( type == Type::Void() &&
              left != Type::Void() && right != Type::Void() )
             Error( arg, "cannot apply '" + op + "' to '" +
                    left.Typename() + "', '" + right.Typename() + "'" );
@@ -145,6 +147,7 @@ IMPLEMENT( BinaryOp )
             arg._right = Promote( arg._right, right, type );
         }
         _type = Type::Int();
+        arg._op_type = type;
     }
     else if ( arg._type == BINARY_OP_GT || arg._type == BINARY_OP_GE ||
               arg._type == BINARY_OP_LT || arg._type == BINARY_OP_LE ) {
@@ -158,6 +161,7 @@ IMPLEMENT( BinaryOp )
             Type type = left.Generalise( right );
             arg._left = Promote( arg._left, left, type );
             arg._right = Promote( arg._right, right, type );
+            arg._op_type = type;
         }
         _type = Type::Int();
     }
@@ -175,6 +179,7 @@ IMPLEMENT( BinaryOp )
         }
         else {
             _type = left.Generalise( right );
+            arg._op_type = _type;
             arg._left = Promote( arg._left, left, _type );
             arg._right = Promote( arg._right, right, _type );
         }
@@ -262,7 +267,7 @@ IMPLEMENT( TupleExtract )
         _type = Type::Void();
         return;
     }
-    if ( arg._index < 0 || arg._index >= _type.TypeArgs().size() ) {
+    if ( arg._index < 0 || arg._index >= signed( _type.TypeArgs().size() ) ) {
         std::stringstream ss;
         ss << "cannot apply '[" << arg._index << "]' to '" << _type.Typename() << "'";
         Error( arg, ss.str() );
@@ -289,7 +294,7 @@ IMPLEMENT( TupleReplace )
         _type = tuple;
         return;
     }
-    if ( arg._index < 0 || arg._index >= tuple.TypeArgs().size() ) {
+    if ( arg._index < 0 || arg._index >= signed( tuple.TypeArgs().size() ) ) {
         std::stringstream ss;
         ss << "cannot apply '[" << arg._index << "/]' to '" << tuple.Typename() << "'";
         Error( arg, ss.str() );
@@ -298,7 +303,7 @@ IMPLEMENT( TupleReplace )
     }
     Type::TypeList list;
     for ( std::size_t i = 0; i < tuple.TypeArgs().size(); ++i )
-        list.push_back( i == arg._index ? expr : tuple.TypeArgs()[ i ] );
+        list.push_back( signed( i ) == arg._index ? expr : tuple.TypeArgs()[ i ] );
     _type = Type::Tuple( list );
 }
 
@@ -411,10 +416,8 @@ IMPLEMENT( Let )
     _table.Push();
     IdentifierOperator io;
     io.Operate( arg._ids );
-    if ( !io.AllIdentifiers() ) {
+    if ( !io.AllIdentifiers() )
         Error( arg, "let variables: must be identifiers" );
-        Operate( arg._ids );
-    }
     else {
         _let_variables = true;
         _let_type = _type;
@@ -469,10 +472,8 @@ IMPLEMENT( Loop )
     _table.Push();
     IdentifierOperator io;
     io.Operate( arg._id );
-    if ( !io.AllIdentifiers() || io.Nested() ) {
+    if ( !io.AllIdentifiers() || io.Nested() )
         Error( arg, "loop variable: must be identifier" );
-        Operate( arg._id );
-    }
     else {
         _let_variables = true;
         _let_type = Type::Int();
@@ -570,7 +571,7 @@ IMPLEMENT( Argument )
         return;
     }
     if ( !_table.AddEntry( arg._id, arg._type ) )
-        Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
+        Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
     _type = Type::Void();
 }
 
@@ -583,7 +584,7 @@ IMPLEMENT( FuncDef )
         for ( std::size_t i = 0; i < arg._args.size(); ++i )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Function( arg._return_type, _declaration_list ) ) )
-            Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
+            Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
         return;
     }
 
@@ -610,7 +611,7 @@ IMPLEMENT( SeqDef )
         for ( std::size_t i = 0; i < arg._args.size(); ++i )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Sequence( _declaration_list ) ) )
-            Error( arg, "identifier '" + arg._id + "' already defined in this scope" );
+            Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
         return;
     }
 
@@ -636,7 +637,7 @@ IMPLEMENT( VidDef )
     if ( arg._modifiers & MODIFIER_LOCAL )
         Error( arg, "'local' modifier illegal on video definitions" );
     if ( !_table.AddEntry( "video::" + arg._id, Type::Sequence( Type::TypeList() ) ) )
-        Error( arg, "video '" + arg._id + "' already defined in this scope" );
+        Error( arg, "video '" + arg._id + "' already declared in this scope" );
     Operate( arg._frame_count );
     if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
         Error( arg, "frame count: cannot convert '" + _type.Typename() +

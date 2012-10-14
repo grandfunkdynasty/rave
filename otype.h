@@ -18,7 +18,7 @@ private:
     int* _errors;
 
     Type Resolve( const Ast& arg, const Type& type );
-    SymbolTable _table;
+    SymbolTable< Type > _table;
 
     bool _declarations;
     bool _declare_globals;

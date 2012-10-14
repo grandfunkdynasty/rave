@@ -93,6 +93,7 @@ private:
     int _type;
     Ast* _left;
     Ast* _right;
+    Type _op_type;
 
 };
 
@@ -138,6 +139,7 @@ private:
     Ast* _expr;
     Ast* _left;
     Ast* _right;
+    Type _value_type;
 
 };
 

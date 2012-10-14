@@ -24,6 +24,10 @@ int main( int argc, char** argv )
     StringOperator ostring;
     ostring.Operate( ast );
     std::cout << ostring.Result();
+
+    IrGenOperator oir;
+    oir.Operate( ast );
+
     delete ast;
     return 0;
 }

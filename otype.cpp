@@ -239,7 +239,7 @@ IMPLEMENT( TypeDef )
     if ( _declare_globals && arg._modifiers & MODIFIER_LOCAL )
         return;
     if ( !_table.AddEntry( arg._id, Resolve( arg, arg._type ) ) )
-        Error( arg, "type '~" + arg._id + "' already defined" );
+        Error( arg, "type '~" + arg._id + "' already declared in this scope" );
 }
 
 IMPLEMENT( Program )

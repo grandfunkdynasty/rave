@@ -41,6 +41,7 @@ private:
 #include "ostatic.h"
 #include "ostring.h"
 #include "oidentifier.h"
+#include "oirgen.h"
 
 #define ACCEPT( type )                                                  \
                                                                         \
@@ -57,6 +58,7 @@ private:
     friend void TypeOperator::Operate##type( type& arg );               \
     friend void StaticOperator::Operate##type( type& arg );             \
     friend void StringOperator::Operate##type( const type& arg );       \
-    friend void IdentifierOperator::Operate##type( const type& arg )
+    friend void IdentifierOperator::Operate##type( const type& arg );   \
+    friend void IrGenOperator::Operate##type( const type& arg )
 
 #endif

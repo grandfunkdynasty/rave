@@ -68,6 +68,7 @@ BinaryOp::BinaryOp( int type, Ast* left, Ast* right )
 : _type( type )
 , _left( left )
 , _right( right )
+, _op_type( Type::Void() )
 {
 }
 
@@ -133,6 +134,7 @@ TernaryOp::TernaryOp( Ast* expr, Ast* left, Ast* right )
 : _expr( expr )
 , _left( left )
 , _right( right )
+, _value_type( Type::Void() )
 {
 }
 
