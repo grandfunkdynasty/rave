@@ -415,7 +415,7 @@ program_scope : program_scope '{' program_scope '}'                 { $$ = $1;
                                                                       parse_tree = $$; }
               ;
         
-program : program_scope                                             { $$ = $1;
+program : /*program_scope*/expr                                     { $$ = $1;
                                                                       parse_tree = $$; }
         ;
 

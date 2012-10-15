@@ -13,6 +13,7 @@ typedef double rave_float;
 class Internal;
 namespace llvm {
     class Type;
+    class LLVMContext;
 }
 
 /***************************************************************
@@ -53,7 +54,7 @@ public:
     const Type& ReturnType() const;
     const TypeList& TypeArgs() const;
 
-    llvm::Type* LlvmType() const;
+    llvm::Type* LlvmType( llvm::LLVMContext& context ) const;
 
 /***************************************************************
 * Internals

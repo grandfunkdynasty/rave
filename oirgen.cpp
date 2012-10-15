@@ -7,13 +7,18 @@
 #define IMPLEMENT_OPERATOR IrGenOperator
 #define IMPLEMENT_TYPE IMPLEMENT_CONST
 
-IrGenOperator::IrGenOperator()
-    : _builder( llvm::getGlobalContext() )
+IrGenOperator::IrGenOperator( llvm::IRBuilder<>& builder )
+    : _builder( builder )
 {
 }
 
 IrGenOperator::~IrGenOperator()
 {
+}
+
+llvm::Value* IrGenOperator::LlvmValue() const
+{
+    return _value;
 }
 
 /***************************************************************
@@ -26,9 +31,9 @@ IMPLEMENT( Constant )
 {
     int64_t t = arg._int_value;
     if ( arg._is_int )
-        _value = llvm::ConstantInt::get( llvm::getGlobalContext(), llvm::APInt( 8 * sizeof( arg._int_value ), *( uint64_t* )&t, true ) );
+        _value = llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( arg._int_value ), *( uint64_t* )&t, true ) );
     else
-        _value = llvm::ConstantFP::get( llvm::getGlobalContext(), llvm::APFloat( arg._float_value ) );
+        _value = llvm::ConstantFP::get( _builder.getContext(), llvm::APFloat( arg._float_value ) );
 }
 
 IMPLEMENT( Identifier )
@@ -41,12 +46,15 @@ IMPLEMENT( TernaryOp )
     Operate( arg._expr );
     llvm::Value* expr = _value;
 
-    expr = _builder.CreateICmpNE( expr, llvm::ConstantInt::get( llvm::getGlobalContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
+    //With: doesn't work on booleans
+    //Without: doesn't work on ints
+    //Possibly need to add bool as a raw type? :/
+    //expr = _builder.CreateICmpNE( expr, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
 
     llvm::Function* parent = _builder.GetInsertBlock()->getParent();
-    llvm::BasicBlock* left_bb = llvm::BasicBlock::Create( llvm::getGlobalContext(), "left", parent );
-    llvm::BasicBlock* right_bb = llvm::BasicBlock::Create( llvm::getGlobalContext(), "right" );
-    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create( llvm::getGlobalContext(), "merge" );
+    llvm::BasicBlock* left_bb = llvm::BasicBlock::Create( _builder.getContext(), "left", parent );
+    llvm::BasicBlock* right_bb = llvm::BasicBlock::Create( _builder.getContext(), "right" );
+    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create( _builder.getContext(), "merge" );
 
     _builder.CreateCondBr( expr, left_bb, right_bb );
     _builder.SetInsertPoint( left_bb );
@@ -66,7 +74,7 @@ IMPLEMENT( TernaryOp )
 
     parent->getBasicBlockList().push_back( merge_bb );
     _builder.SetInsertPoint( merge_bb );
-    llvm::PHINode* phi = _builder.CreatePHI( arg._value_type.LlvmType(), 2, "trntmp" );
+    llvm::PHINode* phi = _builder.CreatePHI( arg._value_type.LlvmType( _builder.getContext() ), 2, "trntmp" );
       
     phi->addIncoming( left, left_bb );
     phi->addIncoming( right, right_bb );
@@ -81,8 +89,8 @@ IMPLEMENT( BinaryOp )
     llvm::Value* right = _value;
 
     if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ) {
-        left = _builder.CreateICmpNE( left, llvm::ConstantInt::get( llvm::getGlobalContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
-        right = _builder.CreateICmpNE( right, llvm::ConstantInt::get( llvm::getGlobalContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
+        left = _builder.CreateICmpNE( left, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
+        right = _builder.CreateICmpNE( right, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
         _value = arg._type == BINARY_OP_OR ? _builder.CreateOr( left, right, "lortmp" ) : _builder.CreateAnd( left, right, "andtmp" );
     }
     else if ( arg._type == BINARY_OP_BIT_AND )

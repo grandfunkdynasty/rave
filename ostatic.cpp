@@ -23,6 +23,11 @@ StaticOperator::~StaticOperator()
 {
 }
 
+const Type& StaticOperator::InferredType() const
+{
+    return _type;
+}
+
 void StaticOperator::Error( const Ast& arg, const std::string& text )
 {
     if ( !*_errors )

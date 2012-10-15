@@ -15,18 +15,19 @@
 class IrGenOperator : public ConstOperator {
 public:
 
-    IrGenOperator();
+    IrGenOperator( llvm::IRBuilder<>& builder );
     ~IrGenOperator();
 
     CONST_OPERATOR;
+
+    llvm::Value* LlvmValue() const;
 
 private:
 
     IrGenOperator& operator=( const IrGenOperator& rhs ) { return *this; }
 
     llvm::Value* _value;
-    llvm::Module *_module;
-    llvm::IRBuilder<> _builder;
+    llvm::IRBuilder<>& _builder;
     SymbolTable< llvm::Value* > _table;
 
 };

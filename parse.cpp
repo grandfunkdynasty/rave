@@ -415,9 +415,11 @@ Ast* parse( const std::string& path )
     include_list = 0;
     fclose( t );
 
-    Ast* parse = construct( parse_tree );
+    if ( !parse_tree )
+        return 0;
+    Ast* parse_ast = construct( parse_tree );
     delete parse_tree;
-    return parse;
+    return parse_ast;
 }
 
 /***************************************************************

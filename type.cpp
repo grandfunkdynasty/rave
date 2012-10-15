@@ -37,7 +37,7 @@ public:
     int RawType() const;
     const Type& ReturnType() const;
     const Type::TypeList& TypeArgs() const;
-    llvm::Type* LlvmType() const;
+    llvm::Type* LlvmType( llvm::LLVMContext& context ) const;
 
 private:
 
@@ -203,9 +203,9 @@ const Type::TypeList& Type::TypeArgs() const
     return _type->TypeArgs();
 }
 
-llvm::Type* Type::LlvmType() const
+llvm::Type* Type::LlvmType( llvm::LLVMContext& context ) const
 {
-    return _type->LlvmType();
+    return _type->LlvmType( context );
 }
 
 /***************************************************************
@@ -438,14 +438,14 @@ const Type::TypeList& Internal::TypeArgs() const
     return _type_args;
 }
 
-llvm::Type* Internal::LlvmType() const
+llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
 {
     if ( _raw_type == TYPE_VOID )
-        return llvm::Type::getVoidTy( llvm::getGlobalContext() );
+        return llvm::Type::getVoidTy( context );
     if ( _raw_type == TYPE_INT )
-        return llvm::Type::getInt32Ty( llvm::getGlobalContext() );
+        return llvm::Type::getInt32Ty( context );
     if ( _raw_type == TYPE_FLOAT )
-        return llvm::Type::getDoubleTy( llvm::getGlobalContext() );
+        return llvm::Type::getDoubleTy( context );
     // TODO: map tuple, function, sequence to llvm types
-    return llvm::Type::getVoidTy( llvm::getGlobalContext() );
+    return llvm::Type::getVoidTy( context );
 }

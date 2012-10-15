@@ -12,6 +12,8 @@ public:
 
     OPERATOR;
 
+    const Type& InferredType() const;
+
 private:
 
     void Error( const Ast& arg, const std::string& text );
