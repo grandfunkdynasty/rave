@@ -237,7 +237,7 @@ IMPLEMENT( UnaryOp )
             Error( arg, "cannot apply `" + op + "' to `" + _type.Typename() + "'" );
         else
             arg._expr = Convert( arg._expr, _type, _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float() );
-        _type = _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float();
+        arg._op_type = _type = _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float();
     }
     else if ( arg._type == UNARY_OP_FLOOR ) {
         if ( _type != Type::Float() && _type != Type::Void() )

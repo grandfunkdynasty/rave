@@ -52,6 +52,7 @@ Identifier::~Identifier()
 UnaryOp::UnaryOp( int type, Ast* expr )
 : _type( type )
 , _expr( expr )
+, _op_type( Type::Void() )
 {
 }
 

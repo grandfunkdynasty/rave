@@ -377,7 +377,7 @@ Type Internal::Generalise( const Internal& type ) const
         return type._raw_type == TYPE_INT ? Type::Int() :
                type._raw_type == TYPE_FLOAT ? Type::Float() : Type::Void();
     if ( _raw_type == TYPE_FLOAT )
-        return type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT ?
+        return type._raw_type == TYPE_BOOL || type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT ?
                Type::Float() : Type::Void();
 
     if ( _raw_type == TYPE_TUPLE ) {

@@ -73,6 +73,7 @@ private:
 
     int _type;
     Ast* _expr;
+    Type _op_type;
 
 };
 

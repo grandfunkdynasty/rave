@@ -41,7 +41,7 @@ IMPLEMENT( Converter )
 
 IMPLEMENT( Constant )
 {
-    int64_t t = arg._int_value;
+    int64_t t = arg._int_value; // TODO ~ what if it's too big?
     if ( arg._is_int )
         _value = llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( arg._int_value ), *( uint64_t* )&t, true ) );
     else
@@ -171,8 +171,8 @@ IMPLEMENT( BinaryOp )
         _value = arg._op_type == Type::Int() ? _builder.CreateSDiv( left, right, "divtmp" ) // TODO: this rounds towards 0, want round towards -inf!
                                              : _builder.CreateFDiv( left, right, "fivtmp" );
     else if ( arg._type == BINARY_OP_MOD )
-        _value = arg._op_type == Type::Int() ? _builder.CreateSRem( left, right, "modtmp" ) // TODO: similarly wrong
-                                             : _builder.CreateFRem( left, right, "fodtmp" );
+        _value = arg._op_type == Type::Int() ? _builder.CreateSRem( left, right, "modtmp" ) // TODO: similarly wrong. IE want euclidean division rather than floor division
+                                             : _builder.CreateFRem( left, right, "fodtmp" ); // TODO: also weird but fmod doesn't match up with fdiv anyway so does it matter?
     else if ( arg._type == BINARY_OP_EXP )
         _value = 0; // TODO
 }
@@ -185,8 +185,12 @@ IMPLEMENT( UnaryOp )
         _value = _builder.CreateICmpEQ( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), "nottmp" );
     else if ( arg._type == UNARY_OP_BIT_NOT )
         _value = _builder.CreateXor( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), UINT64_MAX, true ) ), "bnttmp" );
-    else if ( arg._type == UNARY_OP_NEGATION )
-        _value = _builder.CreateSub( llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), _value, "negtmp" );
+    else if ( arg._type == UNARY_OP_NEGATION ) {
+        if ( arg._op_type == Type::Int() )
+            _value = _builder.CreateSub( llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), _value, "negtmp" );
+        else
+            _value = _builder.CreateFSub( llvm::ConstantFP::get( _builder.getContext(), llvm::APFloat( 0.0 ) ), _value, "fngtmp" );
+    }
     else if ( arg._type == UNARY_OP_FLOOR )
         _value = _builder.CreateFPToSI( _value, llvm::Type::getInt32Ty( _builder.getContext() ), "flrtmp" ); // TODO: this rounds towards 0, want round towards -inf!
 }

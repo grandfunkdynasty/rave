@@ -3,6 +3,7 @@
 #include "expr.h"
 #include "defs.h"
 #include "decs.h"
+#include <iomanip>
 
 #define IMPLEMENT_OPERATOR StringOperator
 #define IMPLEMENT_TYPE IMPLEMENT_CONST
@@ -10,6 +11,7 @@
 StringOperator::StringOperator()
     : _indent( 0 )
 {
+    _result << std::setprecision( 8 ) << std::fixed;
 }
 
 StringOperator::~StringOperator()
