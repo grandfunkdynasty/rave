@@ -80,7 +80,7 @@ IMPLEMENT( FunctionCall )
     _allIdentifiers = false;
 }
 
-IMPLEMENT( Promoter )
+IMPLEMENT( Converter )
 {
     _allIdentifiers = false;
 }

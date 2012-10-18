@@ -31,7 +31,7 @@ void TypeOperator::Error( const Ast& arg, const std::string& text )
 
 Type TypeOperator::Resolve( const Ast& arg, const Type& type )
 {
-    if ( type == Type::Void() || type == Type::Int() || type == Type::Float() )
+    if ( type == Type::Void() || type == Type::Bool() || type == Type::Int() || type == Type::Float() )
         return type;
     if ( type.Typedef() != "" && !type.IsUnresolved() )
         return type;
@@ -115,7 +115,7 @@ IMPLEMENT( FunctionCall )
         Operate( arg._args[ i ] );
 }
 
-IMPLEMENT( Promoter )
+IMPLEMENT( Converter )
 {
     Operate( arg._expr );
     arg._to = Resolve( arg, arg._to );

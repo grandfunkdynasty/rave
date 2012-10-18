@@ -220,20 +220,21 @@ private:
 };
 
 /***************************************************************
-* Promote
+* Convert
 ***************************************************************/
 
-class Promoter : public Ast {
+class Converter : public Ast {
 public:
 
-    Promoter( Ast* expr, Type to );
-    virtual ~Promoter();
+    Converter( Ast* expr, Type from, Type to );
+    virtual ~Converter();
 
-    ACCEPT( Promoter );
+    ACCEPT( Converter );
 
 private:
 
     Ast* _expr;
+    Type _from;
     Type _to;
 
 };

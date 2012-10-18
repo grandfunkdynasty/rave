@@ -17,7 +17,7 @@
     X( TupleExtract );      \
     X( TupleReplace );      \
     X( FunctionCall );      \
-    X( Promoter );          \
+    X( Converter );          \
     X( Body );              \
     X( Return );            \
     X( Guard );             \

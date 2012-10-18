@@ -26,6 +26,7 @@ public:
     typedef std::vector< Type > TypeList;
 
     static Type Void();
+    static Type Bool();
     static Type Int();
     static Type Float();
     static Type Tuple( const TypeList& type_args );

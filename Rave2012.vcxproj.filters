@@ -1,0 +1,126 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="generated">
+      <UniqueIdentifier>{42a70813-748f-4c1a-9574-32ad33e7eb16}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ast">
+      <UniqueIdentifier>{82b1a2ee-080c-48d3-a804-bbd8d27e31e5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="parse">
+      <UniqueIdentifier>{b9c8b6ed-5ed3-4bab-aa2e-2918f51149e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="semantics">
+      <UniqueIdentifier>{ba6e5e59-f6eb-4d75-a9e0-13038ebecbce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="operators">
+      <UniqueIdentifier>{1a7c605c-a792-4aaa-b023-ff9846ec45da}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="generated\lex.yy.c">
+      <Filter>generated</Filter>
+    </ClCompile>
+    <ClCompile Include="generated\y.tab.c">
+      <Filter>generated</Filter>
+    </ClCompile>
+    <ClCompile Include="ast.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="decs.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="defs.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="expr.cpp">
+      <Filter>ast</Filter>
+    </ClCompile>
+    <ClCompile Include="parse.cpp">
+      <Filter>parse</Filter>
+    </ClCompile>
+    <ClCompile Include="type.cpp">
+      <Filter>semantics</Filter>
+    </ClCompile>
+    <ClCompile Include="oidentifier.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
+    <ClCompile Include="oirgen.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
+    <ClCompile Include="operator.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
+    <ClCompile Include="ostatic.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
+    <ClCompile Include="ostring.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
+    <ClCompile Include="otype.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
+    <ClCompile Include="main.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="generated\y.output">
+      <Filter>generated</Filter>
+    </None>
+    <None Include="rave.l">
+      <Filter>parse</Filter>
+    </None>
+    <None Include="rave.y">
+      <Filter>parse</Filter>
+    </None>
+    <None Include="compile.bat" />
+    <None Include="mandelbrot.rve" />
+    <None Include="test.rve" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="generated\y.tab.h">
+      <Filter>generated</Filter>
+    </ClInclude>
+    <ClInclude Include="ast.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="decs.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="defs.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="expr.h">
+      <Filter>ast</Filter>
+    </ClInclude>
+    <ClInclude Include="astenum.h">
+      <Filter>parse</Filter>
+    </ClInclude>
+    <ClInclude Include="parse.h">
+      <Filter>parse</Filter>
+    </ClInclude>
+    <ClInclude Include="symbol.h">
+      <Filter>semantics</Filter>
+    </ClInclude>
+    <ClInclude Include="type.h">
+      <Filter>semantics</Filter>
+    </ClInclude>
+    <ClInclude Include="oidentifier.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+    <ClInclude Include="oirgen.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+    <ClInclude Include="operator.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+    <ClInclude Include="ostatic.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+    <ClInclude Include="ostring.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+    <ClInclude Include="otype.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

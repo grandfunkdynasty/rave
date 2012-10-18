@@ -210,16 +210,17 @@ FunctionCall::~FunctionCall()
 }
 
 /***************************************************************
-* Promote
+* Convert
 ***************************************************************/
 
-Promoter::Promoter( Ast* expr, Type to )
+Converter::Converter( Ast* expr, Type from, Type to )
 : _expr( expr )
+, _from( from )
 , _to( to )
 {
 }
 
-Promoter::~Promoter()
+Converter::~Converter()
 {
     delete _expr;
 }

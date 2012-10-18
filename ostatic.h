@@ -19,7 +19,7 @@ private:
     void Error( const Ast& arg, const std::string& text );
     int* _errors;
 
-    Ast* Promote( Ast* expr, Type from, Type to );
+    Ast* Convert( Ast* expr, Type from, Type to );
 
     Type _type;
     Type _return_type;

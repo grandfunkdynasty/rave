@@ -166,7 +166,7 @@ IMPLEMENT( FunctionCall )
     _result << ")";
 }
 
-IMPLEMENT( Promoter )
+IMPLEMENT( Converter )
 {
     _result << arg._to.Typename() << "(";
     Operate( arg._expr );

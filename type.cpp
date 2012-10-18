@@ -2,6 +2,7 @@
 #pragma warning(push, 0)
 #include "llvm/DerivedTypes.h"
 #include "llvm/LLVMContext.h"
+#include "llvm/ExecutionEngine/GenericValue.h"
 #pragma warning(pop)
 
 Type::InternalSet Type::_type_set;
@@ -15,6 +16,7 @@ public:
 
     enum RawType {
         TYPE_VOID,
+        TYPE_BOOL,
         TYPE_INT,
         TYPE_FLOAT,
         TYPE_TUPLE,
@@ -54,6 +56,12 @@ private:
 Type Type::Void()
 {
     static Internal result( Internal::TYPE_VOID, Type::Void(), TypeList() );
+    return result;
+}
+
+Type Type::Bool()
+{
+    static Internal result( Internal::TYPE_BOOL, Type::Void(), TypeList() );
     return result;
 }
 
@@ -290,7 +298,7 @@ bool Internal::Equivalent( const Internal& type ) const
 {
     if ( _raw_type != type._raw_type )
         return false;
-    if ( _raw_type == TYPE_VOID || _raw_type == TYPE_INT || _raw_type == TYPE_FLOAT )
+    if ( _raw_type == TYPE_VOID || _raw_type == TYPE_BOOL || _raw_type == TYPE_INT || _raw_type == TYPE_FLOAT )
         return true;
 
     if ( _raw_type == TYPE_TUPLE ) {
@@ -323,8 +331,8 @@ bool Internal::ConvertsTo( const Internal& type ) const
     if ( _raw_type == TYPE_VOID || type._raw_type == TYPE_VOID )
         return false;
 
-    if ( _raw_type == TYPE_INT )
-        return type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT;
+    if ( _raw_type == TYPE_INT || _raw_type == TYPE_BOOL )
+        return type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT || type._raw_type == TYPE_BOOL;
     if ( _raw_type == TYPE_FLOAT )
         return type._raw_type == TYPE_FLOAT;
 
@@ -361,6 +369,10 @@ Type Internal::Generalise( const Internal& type ) const
 {
     if ( _raw_type == TYPE_VOID || type._raw_type == TYPE_VOID )
         return Type::Void();
+    if ( _raw_type == TYPE_BOOL )
+        return type._raw_type == TYPE_BOOL ? Type::Bool() :
+               type._raw_type == TYPE_INT ? Type::Int() :
+               type._raw_type == TYPE_FLOAT ? Type::Float() : Type::Void();
     if ( _raw_type == TYPE_INT )
         return type._raw_type == TYPE_INT ? Type::Int() :
                type._raw_type == TYPE_FLOAT ? Type::Float() : Type::Void();
@@ -404,6 +416,8 @@ std::string Internal::Typename() const
 {
     if ( _raw_type == TYPE_VOID )
         return "void";
+    if ( _raw_type == TYPE_BOOL )
+        return "bool";
     if ( _raw_type == TYPE_INT )
         return "int";
     if ( _raw_type == TYPE_FLOAT )
@@ -442,10 +456,21 @@ llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
 {
     if ( _raw_type == TYPE_VOID )
         return llvm::Type::getVoidTy( context );
+    if ( _raw_type == TYPE_BOOL )
+        return llvm::Type::getInt1Ty( context );
     if ( _raw_type == TYPE_INT )
         return llvm::Type::getInt32Ty( context );
     if ( _raw_type == TYPE_FLOAT )
         return llvm::Type::getDoubleTy( context );
-    // TODO: map tuple, function, sequence to llvm types
+
+    std::vector< llvm::Type* > args;
+    for ( std::size_t i = 0; i < _type_args.size(); ++i )
+        args.push_back( _type_args[ i ].LlvmType( context ) );
+    if ( _raw_type == TYPE_TUPLE )
+        return llvm::StructType::get( context, args, false );
+    if ( _raw_type == TYPE_FUNCTION )
+        return llvm::FunctionType::get( _return_type.LlvmType( context ), args, false );
+    if ( _raw_type == TYPE_SEQUENCE )
+        return llvm::FunctionType::get( llvm::Type::getVoidTy( context ), args, false );
     return llvm::Type::getVoidTy( context );
 }

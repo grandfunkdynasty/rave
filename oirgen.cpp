@@ -27,6 +27,18 @@ llvm::Value* IrGenOperator::LlvmValue() const
 
 IMPLEMENT_EMPTY( ParseError );
 
+IMPLEMENT( Converter )
+{
+    Operate( arg._expr );
+
+    if ( arg._from == Type::Int() && arg._to == Type::Bool() )
+        _value = _builder.CreateICmpNE( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), "tmbool" );
+    else if ( arg._from == Type::Bool() && arg._to == Type::Int() )
+        _value = _builder.CreateZExt( _value, llvm::Type::getInt32Ty( _builder.getContext() ), "tmpint" );
+    else if ( arg._from == Type::Int() && arg._to == Type::Float() )
+        _value = _builder.CreateSIToFP( _value, llvm::Type::getDoubleTy( _builder.getContext() ), "tfloat" );
+}
+
 IMPLEMENT( Constant )
 {
     int64_t t = arg._int_value;
@@ -45,11 +57,6 @@ IMPLEMENT( TernaryOp )
 {
     Operate( arg._expr );
     llvm::Value* expr = _value;
-
-    //With: doesn't work on booleans
-    //Without: doesn't work on ints
-    //Possibly need to add bool as a raw type? :/
-    //expr = _builder.CreateICmpNE( expr, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
 
     llvm::Function* parent = _builder.GetInsertBlock()->getParent();
     llvm::BasicBlock* left_bb = llvm::BasicBlock::Create( _builder.getContext(), "left", parent );
@@ -88,11 +95,10 @@ IMPLEMENT( BinaryOp )
     Operate( arg._right );
     llvm::Value* right = _value;
 
-    if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ) {
-        left = _builder.CreateICmpNE( left, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
-        right = _builder.CreateICmpNE( right, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ) );
-        _value = arg._type == BINARY_OP_OR ? _builder.CreateOr( left, right, "lortmp" ) : _builder.CreateAnd( left, right, "andtmp" );
-    }
+    if ( arg._type == BINARY_OP_OR )
+        _value = _builder.CreateOr( left, right, "lortmp" );
+    else if ( arg._type == BINARY_OP_AND )
+        _value = _builder.CreateAnd( left, right, "andtmp" );
     else if ( arg._type == BINARY_OP_BIT_AND )
         _value = _builder.CreateAnd( left, right, "bndtmp" );
     else if ( arg._type == BINARY_OP_BIT_OR )
@@ -140,7 +146,16 @@ IMPLEMENT( BinaryOp )
 
 IMPLEMENT( UnaryOp )
 {
-    // TODO
+    Operate( arg._expr );
+
+    if ( arg._type == UNARY_OP_NOT )
+        _value = _builder.CreateICmpEQ( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), "nottmp" );
+    else if ( arg._type == UNARY_OP_BIT_NOT )
+        _value = _builder.CreateXor( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), UINT64_MAX, true ) ), "bnttmp" );
+    else if ( arg._type == UNARY_OP_NEGATION )
+        _value = _builder.CreateSub( llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), _value, "negtmp" );
+    else if ( arg._type == UNARY_OP_FLOOR )
+        _value = _builder.CreateFPToSI( _value, llvm::Type::getInt32Ty( _builder.getContext() ), "flrtmp" ); // TODO: this rounds towards 0, want round towards -inf!
 }
 
 IMPLEMENT( TypeOp )
@@ -160,10 +175,6 @@ IMPLEMENT( TupleReplace )
 }
 
 IMPLEMENT( FunctionCall )
-{
-}
-
-IMPLEMENT( Promoter )
 {
 }
 

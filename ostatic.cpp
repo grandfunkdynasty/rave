@@ -39,7 +39,7 @@ void StaticOperator::Error( const Ast& arg, const std::string& text )
     ++*_errors;
 }
 
-Ast* StaticOperator::Promote( Ast* expr, Type from, Type to )
+Ast* StaticOperator::Convert( Ast* expr, Type from, Type to )
 {
     if ( from == Type::Void() || to == Type::Void() )
         return expr;
@@ -49,7 +49,7 @@ Ast* StaticOperator::Promote( Ast* expr, Type from, Type to )
     }
     if ( from.Equivalent( to ) )
         return expr;
-    return new Promoter( expr, to );
+    return new Converter( expr, from, to );
 }
 
 /***************************************************************
@@ -87,14 +87,16 @@ IMPLEMENT( TernaryOp )
     Operate( arg._right );
     Type right = _type;
 
-    if ( !expr.ConvertsTo( Type::Int() ) && expr != Type::Void() )
+    if ( !expr.ConvertsTo( Type::Bool() ) && expr != Type::Void() )
         Error( arg, "cannot apply '?' to '" + expr.Typename() + "'" );
+    else
+        arg._expr = Convert( arg._expr, expr, Type::Bool() );
     _type = left.Generalise( right );
     if ( _type == Type::Void() && left != Type::Void() && right != Type::Void() )
         Error( arg, "'?': cannot generalise '" + left.Typename() +
                "' with '" + right.Typename() + "'" );
-    arg._left = Promote( arg._left, left, _type );
-    arg._right = Promote( arg._right, right, _type );
+    arg._left = Convert( arg._left, left, _type );
+    arg._right = Convert( arg._right, right, _type );
     arg._value_type = _type;
 }
 
@@ -126,8 +128,19 @@ IMPLEMENT( BinaryOp )
           arg._type == BINARY_OP_MOD ? "%" :
           arg._type == BINARY_OP_EXP ? "^" : "" );
 
-    if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ||
-         arg._type == BINARY_OP_BIT_OR || arg._type == BINARY_OP_BIT_AND ||
+    if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ) {
+        if ( !( left.ConvertsTo( Type::Bool() ) && left != Type::Void() ) ||
+             !( right.ConvertsTo( Type::Bool() ) && right != Type::Void() ) )
+            Error( arg, "cannot apply '" + op + "' to '" +
+                   left.Typename() + "', '" + right.Typename() + "'" );
+        else {
+            arg._left = Convert( arg._left, left, Type::Bool() );
+            arg._right = Convert( arg._right, right, Type::Bool() );
+        }
+        _type = Type::Bool();
+        arg._op_type = Type::Bool();
+    }
+    if ( arg._type == BINARY_OP_BIT_OR || arg._type == BINARY_OP_BIT_AND ||
          arg._type == BINARY_OP_BIT_XOR ||
          arg._type == BINARY_OP_LSHIFT || arg._type == BINARY_OP_RSHIFT ) {
         if ( !( left.ConvertsTo( Type::Int() ) && left != Type::Void() ) ||
@@ -135,8 +148,8 @@ IMPLEMENT( BinaryOp )
             Error( arg, "cannot apply '" + op + "' to '" +
                    left.Typename() + "', '" + right.Typename() + "'" );
         else {
-            arg._left = Promote( arg._left, left, Type::Int() );
-            arg._right = Promote( arg._right, right, Type::Int() );
+            arg._left = Convert( arg._left, left, Type::Int() );
+            arg._right = Convert( arg._right, right, Type::Int() );
         }
         _type = Type::Int();
         arg._op_type = Type::Int();
@@ -148,8 +161,8 @@ IMPLEMENT( BinaryOp )
             Error( arg, "cannot apply '" + op + "' to '" +
                    left.Typename() + "', '" + right.Typename() + "'" );
         else {
-            arg._left = Promote( arg._left, left, type );
-            arg._right = Promote( arg._right, right, type );
+            arg._left = Convert( arg._left, left, type );
+            arg._right = Convert( arg._right, right, type );
         }
         _type = Type::Int();
         arg._op_type = type;
@@ -164,11 +177,11 @@ IMPLEMENT( BinaryOp )
                    left.Typename() + "', '" + right.Typename() + "'" );
         else {
             Type type = left.Generalise( right );
-            arg._left = Promote( arg._left, left, type );
-            arg._right = Promote( arg._right, right, type );
+            arg._left = Convert( arg._left, left, type );
+            arg._right = Convert( arg._right, right, type );
             arg._op_type = type;
         }
-        _type = Type::Int();
+        _type = Type::Bool();
     }
     else if ( arg._type == BINARY_OP_ADD || arg._type == BINARY_OP_SUB ||
               arg._type == BINARY_OP_MUL || arg._type == BINARY_OP_DIV ||
@@ -185,8 +198,8 @@ IMPLEMENT( BinaryOp )
         else {
             _type = left.Generalise( right );
             arg._op_type = _type;
-            arg._left = Promote( arg._left, left, _type );
-            arg._right = Promote( arg._right, right, _type );
+            arg._left = Convert( arg._left, left, _type );
+            arg._right = Convert( arg._right, right, _type );
         }
     }
     else {
@@ -204,15 +217,26 @@ IMPLEMENT( UnaryOp )
                      arg._type == UNARY_OP_NEGATION ? "-" :
                      arg._type == UNARY_OP_FLOOR ? "[]" : "";
 
-    if ( arg._type == UNARY_OP_NOT || arg._type == UNARY_OP_BIT_NOT ) {
+    if ( arg._type == UNARY_OP_NOT ) {
+        if ( !_type.ConvertsTo( Type::Bool() ) && _type != Type::Void() )
+            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
+        else
+            arg._expr = Convert( arg._expr, _type, Type::Bool() );
+        _type = Type::Bool();
+    }        
+    if ( arg._type == UNARY_OP_BIT_NOT ) {
         if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
             Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
+        else
+            arg._expr = Convert( arg._expr, _type, Type::Int() );
         _type = Type::Int();
     }
     else if ( arg._type == UNARY_OP_NEGATION ) {
         if ( !_type.ConvertsTo( Type::Int() ) && !_type.ConvertsTo( Type::Float() ) &&
              _type != Type::Void() )
             Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
+        else
+            arg._expr = Convert( arg._expr, _type, _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float() );
         _type = _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float();
     }
     else if ( arg._type == UNARY_OP_FLOOR ) {
@@ -335,7 +359,7 @@ IMPLEMENT( FunctionCall )
             Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].Typename() +
                    "' to '" + function.TypeArgs()[ i ].Typename() + "'" );
         else
-            arg._args[ i ] = Promote( arg._args[ i ], list[ i ], function.TypeArgs()[ i ] );
+            arg._args[ i ] = Convert( arg._args[ i ], list[ i ], function.TypeArgs()[ i ] );
     }
     
     if ( list.size() > function.TypeArgs().size() ) {
@@ -359,7 +383,7 @@ IMPLEMENT( FunctionCall )
         Type::Function( function.ReturnType(), new_list ) : Type::Sequence( new_list );
 }
 
-IMPLEMENT( Promoter )
+IMPLEMENT( Converter )
 {
     Operate( arg._expr );
     if ( !_type.ConvertsTo( arg._to ) )
@@ -390,7 +414,7 @@ IMPLEMENT( Return )
         Error( arg, "return value: cannot convert '" + _type.Typename() +
                     "' to '" + _return_type.Typename() + "'" );
     else
-        arg._expr = Promote( arg._expr, _type, _return_type );
+        arg._expr = Convert( arg._expr, _type, _return_type );
     _return_path = true;
     _type = Type::Void();
 }
@@ -400,11 +424,11 @@ IMPLEMENT( Guard )
     bool b = _return_path;
     _return_path = false;
     Operate( arg._expr );
-    if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
+    if ( !_type.ConvertsTo( Type::Bool() ) && _type != Type::Void() )
         Error( arg, "condition: cannot convert '" + _type.Typename() +
-               "' to '" + Type::Int().Typename() + "'" );
+               "' to '" + Type::Bool().Typename() + "'" );
     else
-        arg._expr = Promote( arg._expr, _type, Type::Int() );
+        arg._expr = Convert( arg._expr, _type, Type::Bool() );
     Operate( arg._then );
     if ( arg._otherwise )
         Operate( arg._otherwise );
@@ -467,12 +491,12 @@ IMPLEMENT( Loop )
         Error( arg, "loop index: cannot convert '" + begin.Typename() +
                "' to '" + Type::Int().Typename() + "'" );
     else
-        arg._begin = Promote( arg._begin, _type, Type::Int() );
+        arg._begin = Convert( arg._begin, _type, Type::Int() );
     if ( !end.ConvertsTo( Type::Int() ) && end != Type::Void() )
         Error( arg, "loop index: cannot convert '" + end.Typename() +
                "' to '" + Type::Int().Typename() + "'" );
     else
-        arg._end = Promote( arg._end, _type, Type::Int() );
+        arg._end = Convert( arg._end, _type, Type::Int() );
 
     _table.Push();
     IdentifierOperator io;
@@ -513,7 +537,7 @@ IMPLEMENT( SequenceCall )
             Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].Typename() +
                    "' to '" + sequence.TypeArgs()[ i ].Typename() + "'" );
         else
-            arg._args[ i ] = Promote( arg._args[ i ], list[ i ], sequence.TypeArgs()[ i ] );
+            arg._args[ i ] = Convert( arg._args[ i ], list[ i ], sequence.TypeArgs()[ i ] );
     }
     
     if ( list.size() > sequence.TypeArgs().size() )
@@ -527,7 +551,7 @@ IMPLEMENT( SequenceCall )
 
 IMPLEMENT( FxStatement )
 {
-    // TODO: fx type check and promote
+    // TODO: fx type check and Convert
     Operate( arg._expr );
     _type = Type::Void();
 }
@@ -563,8 +587,8 @@ IMPLEMENT( Layer )
         Error( arg, "layer index: cannot convert '" + order.Typename() +
                "' to '" + Type::Int().Typename() + "'" );
     else if ( arg._order )
-        arg._order = Promote( arg._order, order, Type::Int() );
-    // TODO: fx type check and promote
+        arg._order = Convert( arg._order, order, Type::Int() );
+    // TODO: fx type check and Convert
     Operate( arg._statement );
     _type = Type::Void();
 }
@@ -648,7 +672,7 @@ IMPLEMENT( VidDef )
         Error( arg, "frame count: cannot convert '" + _type.Typename() +
                "' to '" + Type::Int().Typename() + "'" );
     else
-        arg._frame_count = Promote( arg._frame_count, _type, Type::Int() );
+        arg._frame_count = Convert( arg._frame_count, _type, Type::Int() );
     _table.Push();
     _table.AddEntry( "frame", Type::Int() );
     Operate( arg._statement );

@@ -23,7 +23,6 @@ enum NodeType {
     NODE_TUPLE_EXTRACT,
     NODE_TUPLE_REPLACE,
     NODE_FUNCTION_CALL,
-    NODE_PROMOTE,
 
     // Functions and sequences
     NODE_BODY,
