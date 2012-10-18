@@ -164,7 +164,7 @@ IMPLEMENT( BinaryOp )
             arg._left = Convert( arg._left, left, type );
             arg._right = Convert( arg._right, right, type );
         }
-        _type = Type::Int();
+        _type = Type::Bool();
         arg._op_type = type;
     }
     else if ( arg._type == BINARY_OP_GT || arg._type == BINARY_OP_GE ||
@@ -291,19 +291,30 @@ IMPLEMENT( TupleExtract )
     if ( _type == Type::Void() )
         return;
 
+    bool fail = false;
     if ( !_type.IsTuple() ) {
         Error( arg, "cannot apply `[]' to `" + _type.Typename() + "'" );
+        fail = true;
+    }
+    SubtreeConstraintOperator oconstraint;
+    oconstraint.Operate( arg._index );
+    if ( !oconstraint.ConstantInt() ) {
+        Error( arg, "tuple-extract: index must be constant int" );
+        fail = true;
+    }
+    if ( fail ) {
         _type = Type::Void();
         return;
     }
-    if ( arg._index < 0 || arg._index >= signed( _type.TypeArgs().size() ) ) {
+    rave_int index = oconstraint.ConstantIntValue();
+    if ( index < 0 || index >= signed( _type.TypeArgs().size() ) ) {
         std::stringstream ss;
-        ss << "cannot apply `[" << arg._index << "]' to `" << _type.Typename() << "'";
+        ss << "cannot apply `[" << index << "]' to `" << _type.Typename() << "'";
         Error( arg, ss.str() );
         _type = Type::Void();
         return;
     }
-    _type = _type.TypeArgs()[ arg._index ];
+    _type = _type.TypeArgs()[ index ];
 }
 
 IMPLEMENT( TupleReplace )
@@ -318,21 +329,32 @@ IMPLEMENT( TupleReplace )
         return;
     }
 
+    bool fail = false;
     if ( !tuple.IsTuple() ) {
-        Error( arg, "cannot apply `[/]' to `" + tuple.Typename() + "'" );
-        _type = tuple;
+        Error( arg, "cannot apply `[//]' to `" + tuple.Typename() + "'" );
+        fail = true;
+    }
+    SubtreeConstraintOperator oconstraint;
+    oconstraint.Operate( arg._index );
+    if ( !oconstraint.ConstantInt() ) {
+        Error( arg, "tuple-replace: index must be constant int" );
+        fail = true;
+    }
+    if ( fail ) {
+        _type = Type::Void();
         return;
     }
-    if ( arg._index < 0 || arg._index >= signed( tuple.TypeArgs().size() ) ) {
+    rave_int index = oconstraint.ConstantIntValue();
+    if ( index < 0 || index >= signed( tuple.TypeArgs().size() ) ) {
         std::stringstream ss;
-        ss << "cannot apply `[" << arg._index << "/]' to `" << tuple.Typename() << "'";
+        ss << "cannot apply `[" << index << "//]' to `" << tuple.Typename() << "'";
         Error( arg, ss.str() );
         _type = tuple;
         return;
     }
     Type::TypeList list;
     for ( std::size_t i = 0; i < tuple.TypeArgs().size(); ++i )
-        list.push_back( signed( i ) == arg._index ? expr : tuple.TypeArgs()[ i ] );
+        list.push_back( signed( i ) == index ? expr : tuple.TypeArgs()[ i ] );
     _type = Type::Tuple( list );
 }
 
@@ -443,9 +465,9 @@ IMPLEMENT( Let )
     Operate( arg._expr );
 
     _table.Push();
-    IdentifierOperator io;
-    io.Operate( arg._ids );
-    if ( !io.AllIdentifiers() )
+    SubtreeConstraintOperator oconstraint;
+    oconstraint.Operate( arg._ids );
+    if ( !oconstraint.AllIdentifiers() )
         Error( arg, "let variables: must be identifiers" );
     else {
         _let_variables = true;
@@ -499,9 +521,9 @@ IMPLEMENT( Loop )
         arg._end = Convert( arg._end, _type, Type::Int() );
 
     _table.Push();
-    IdentifierOperator io;
-    io.Operate( arg._id );
-    if ( !io.AllIdentifiers() || io.Nested() )
+    SubtreeConstraintOperator oconstraint;
+    oconstraint.Operate( arg._id );
+    if ( !oconstraint.AllIdentifiers() || oconstraint.Nested() )
         Error( arg, "loop variable: must be identifier" );
     else {
         _let_variables = true;

@@ -382,9 +382,10 @@
     <ClCompile Include="decs.cpp" />
     <ClCompile Include="defs.cpp" />
     <ClCompile Include="expr.cpp" />
+    <ClCompile Include="oconstraint.cpp" />
+    <ClCompile Include="oexpand.cpp" />
     <ClCompile Include="parse.cpp" />
     <ClCompile Include="type.cpp" />
-    <ClCompile Include="oidentifier.cpp" />
     <ClCompile Include="oirgen.cpp" />
     <ClCompile Include="operator.cpp" />
     <ClCompile Include="ostatic.cpp" />
@@ -407,10 +408,11 @@
     <ClInclude Include="defs.h" />
     <ClInclude Include="expr.h" />
     <ClInclude Include="astenum.h" />
+    <ClInclude Include="oconstraint.h" />
+    <ClInclude Include="oexpand.h" />
     <ClInclude Include="parse.h" />
     <ClInclude Include="symbol.h" />
     <ClInclude Include="type.h" />
-    <ClInclude Include="oidentifier.h" />
     <ClInclude Include="oirgen.h" />
     <ClInclude Include="operator.h" />
     <ClInclude Include="ostatic.h" />

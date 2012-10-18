@@ -39,26 +39,28 @@ private:
 
 #include "otype.h"
 #include "ostatic.h"
+#include "oexpand.h"
 #include "ostring.h"
-#include "oidentifier.h"
+#include "oconstraint.h"
 #include "oirgen.h"
 
-#define ACCEPT( type )                                                  \
-                                                                        \
-    virtual void Accept( Operator& op )                                 \
-    {                                                                   \
-        op.Operate##type( *this );                                      \
-    }                                                                   \
-                                                                        \
-    virtual void Accept( ConstOperator& op ) const                      \
-    {                                                                   \
-        op.Operate##type( *this );                                      \
-    }                                                                   \
-                                                                        \
-    friend void TypeOperator::Operate##type( type& arg );               \
-    friend void StaticOperator::Operate##type( type& arg );             \
-    friend void StringOperator::Operate##type( const type& arg );       \
-    friend void IdentifierOperator::Operate##type( const type& arg );   \
+#define ACCEPT( type )                                                          \
+                                                                                \
+    virtual void Accept( Operator& op )                                         \
+    {                                                                           \
+        op.Operate##type( *this );                                              \
+    }                                                                           \
+                                                                                \
+    virtual void Accept( ConstOperator& op ) const                              \
+    {                                                                           \
+        op.Operate##type( *this );                                              \
+    }                                                                           \
+                                                                                \
+    friend void TypeOperator::Operate##type( type& arg );                       \
+    friend void StaticOperator::Operate##type( type& arg );                     \
+    friend void ExpandOperator::Operate##type( type& args );                    \
+    friend void StringOperator::Operate##type( const type& arg );               \
+    friend void SubtreeConstraintOperator::Operate##type( const type& arg );    \
     friend void IrGenOperator::Operate##type( const type& arg )
 
 #endif

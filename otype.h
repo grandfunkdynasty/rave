@@ -8,7 +8,7 @@ class TypeOperator : public Operator {
 public:
 
     TypeOperator( int* errors );
-    ~TypeOperator();
+    virtual ~TypeOperator();
 
     OPERATOR;
 

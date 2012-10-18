@@ -74,6 +74,7 @@ struct Node* error( const char* text )
 %token <type>       T_BINARY_OP_9
 %token <type>       T_BINARY_OP_10
 %token <type>       T_BINARY_OP_11
+%token <type>       T_REPLACE
 %token <type>       T_UNARY_OP
 %token <type>       T_TYPE_OP
 %token <integer>    T_INT_LITERAL
@@ -175,9 +176,9 @@ t_expr : T_INT_LITERAL                                              { $$ = alloc
        | t_expr '*' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_MUL, $1, $3 ); }
        | t_expr '%' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_MOD, $1, $3 ); }
        | t_expr T_BINARY_OP_10 t_expr                               { $$ = alloc_binary_node( $2, $1, $3 ); }
-       | t_expr '[' T_INT_LITERAL ']'                               { $$ = alloc_node( NODE_TUPLE_EXTRACT, 0 );
+       | t_expr '[' expr ']'                                        { $$ = alloc_node( NODE_TUPLE_EXTRACT, 0 );
                                                                       push_back( $$, $1 );
-                                                                      $$->int_data = $3; }
+                                                                      push_back( $$, $3 ); }
        | '!' t_expr %prec T_UNARY_OP                                { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_NOT );
                                                                       push_back( $$, $2 ); }
        | '\\' t_expr %prec T_UNARY_OP                               { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_BIT_NOT );
@@ -186,9 +187,9 @@ t_expr : T_INT_LITERAL                                              { $$ = alloc
                                                                       push_back( $$, $2 ); }
        | '[' expr ']' %prec T_UNARY_OP                              { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_FLOOR );
                                                                       push_back( $$, $2 ); }
-       | t_expr '[' T_INT_LITERAL '/' expr ']'                      { $$ = alloc_node( NODE_TUPLE_REPLACE, 0 );
+       | t_expr '[' expr T_REPLACE expr ']'                         { $$ = alloc_node( NODE_TUPLE_REPLACE, 0 );
                                                                       push_back( $$, $1 );
-                                                                      $$->int_data = $3;
+                                                                      push_back( $$, $3 );
                                                                       push_back( $$, $5 ); }
        | type T_TYPE_OP type                                        { $$ = alloc_typeop_node( $2, $1, $3 ); }
        | t_expr T_TYPE_OP type                                      { $$ = alloc_typeop_node( $2, $1, $3 ); }

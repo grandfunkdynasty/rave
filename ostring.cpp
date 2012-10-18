@@ -140,14 +140,17 @@ IMPLEMENT( TupleConstruct )
 IMPLEMENT( TupleExtract )
 {
     Operate( arg._tuple );
-    _result << "[" << arg._index << "]";
+    _result << "[";
+    Operate( arg._index );
+    _result << "]";
 }
-
 
 IMPLEMENT( TupleReplace )
 {
     Operate( arg._tuple );
-    _result << "[" << arg._index << " / ";
+    _result << "[";
+    Operate( arg._index );
+    _result << " // ";
     Operate( arg._expr );
     _result << "]";
 }

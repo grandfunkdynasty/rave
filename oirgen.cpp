@@ -109,10 +109,43 @@ IMPLEMENT( BinaryOp )
         _value = _builder.CreateShl( left, right, "shltmp" );
     else if ( arg._type == BINARY_OP_RSHIFT )
         _value = _builder.CreateAShr( left, right, "shrtmp" );
-    else if ( arg._type == BINARY_OP_EQ )
-        _value = 0; // TODO ~ need to recursively check
-    else if ( arg._type == BINARY_OP_NE )
-        _value = 0; // TODO ~ OR and another pass that expands this to thing == thing && thing == thing for tuples; not sure about functions
+    else if ( arg._type == BINARY_OP_EQ || arg._type == BINARY_OP_NE ) {
+        _value = 0;
+        std::vector< std::vector< rave_int > > _stack;
+        _stack.push_back( std::vector< rave_int >() );
+
+        while ( !_stack.empty() ) {
+            std::vector< rave_int > indices = _stack[ _stack.size() - 1 ];
+            _stack.pop_back();
+
+            Type t = arg._op_type;
+            for ( std::size_t i = 0; i < indices.size(); ++i )
+                t = t.TypeArgs()[ indices[ i ] ];
+            if ( t.IsTuple() ) {
+                for ( std::size_t i = 0; i < t.TypeArgs().size(); ++i ) {
+                    _stack.push_back( indices );
+                    _stack[ _stack.size() - 1 ].push_back( i );
+                }
+                continue;
+            }
+            llvm::Value* vt = 0;
+            if ( t.IsFunction() || t.IsSequence() ) // TODO ~ right now just false
+                vt = llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 1, arg._type == BINARY_OP_EQ ? 0 : 1, false ) );
+            else {
+                llvm::Value* lt = left;
+                llvm::Value* rt = right;
+                for ( std::size_t i = 0; i < indices.size(); ++i ) {
+                    lt = left; // TODO ~ struct-get left[ indices[ i ] ]
+                    rt = right; // TODO ~ struct-get right[ indices[ i ] ]
+                }
+                if ( t == Type::Float() )
+                    vt = arg._type == BINARY_OP_EQ ? _builder.CreateFCmpOEQ( lt, rt, "feqtmp" ) : _builder.CreateFCmpONE( lt, rt, "fnetmp" );
+                else
+                    vt = arg._type == BINARY_OP_EQ ? _builder.CreateICmpEQ( lt, rt, "ieqtmp" ) : _builder.CreateICmpNE( lt, rt, "inetmp" );
+            }
+            _value = _value == 0 ? vt : arg._type == BINARY_OP_EQ ? _builder.CreateAnd( _value, vt, "ceqtmp" ) : _builder.CreateOr( _value, vt, "cnetmp" );
+        }
+    }
     else if ( arg._type == BINARY_OP_GT )
         _value = arg._op_type == Type::Int() ? _builder.CreateICmpSGT( left, right, "igttmp" )
                                              : _builder.CreateFCmpOGT( left, right, "fgttmp" );

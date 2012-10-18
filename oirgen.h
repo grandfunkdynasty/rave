@@ -16,7 +16,7 @@ class IrGenOperator : public ConstOperator {
 public:
 
     IrGenOperator( llvm::IRBuilder<>& builder );
-    ~IrGenOperator();
+    virtual ~IrGenOperator();
 
     CONST_OPERATOR;
 

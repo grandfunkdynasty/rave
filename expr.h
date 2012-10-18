@@ -168,7 +168,7 @@ private:
 class TupleExtract : public Ast {
 public:
 
-    TupleExtract( Ast* tuple, rave_int index );
+    TupleExtract( Ast* tuple, Ast* index );
     virtual ~TupleExtract();
 
     ACCEPT( TupleExtract );
@@ -176,7 +176,7 @@ public:
 private:
 
     Ast* _tuple;
-    rave_int _index;
+    Ast* _index;
 
 };
 
@@ -187,7 +187,7 @@ private:
 class TupleReplace : public Ast {
 public:
 
-    TupleReplace( Ast* tuple, rave_int index, Ast* expr );
+    TupleReplace( Ast* tuple, Ast* index, Ast* expr );
     virtual ~TupleReplace();
 
     ACCEPT( TupleReplace );
@@ -195,7 +195,7 @@ public:
 private:
 
     Ast* _tuple;
-    rave_int _index;
+    Ast* _index;
     Ast* _expr;
 
 };

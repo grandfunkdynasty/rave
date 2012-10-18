@@ -1,55 +1,18 @@
-#include "otype.h"
+#include "oexpand.h"
 #include "astenum.h"
 #include "expr.h"
 #include "defs.h"
 #include "decs.h"
 
-#define IMPLEMENT_OPERATOR TypeOperator
+#define IMPLEMENT_OPERATOR ExpandOperator
 #define IMPLEMENT_TYPE IMPLEMENT_NON_CONST
 
-TypeOperator::TypeOperator( int* errors )
-: _errors( errors )
-, _declare_globals( false )
-, _declarations( false )
+ExpandOperator::ExpandOperator()
 {
 }
 
-TypeOperator::~TypeOperator()
+ExpandOperator::~ExpandOperator()
 {
-}
-
-void TypeOperator::Error( const Ast& arg, const std::string& text )
-{
-    if ( !*_errors )
-        std::cout << "\n";
-    if ( *_errors == 64 )
-        std::cout << "[more errors...]\n";
-    else if ( *_errors < 64 )
-        std::cout << arg.GetFileInfo() << " line " << arg.GetLineInfo() << ":\t" << text << "\n";
-    ++*_errors;
-}
-
-Type TypeOperator::Resolve( const Ast& arg, const Type& type )
-{
-    if ( type == Type::Void() || type == Type::Bool() || type == Type::Int() || type == Type::Float() )
-        return type;
-    if ( type.Typedef() != "" && !type.IsUnresolved() )
-        return type;
-    if ( type.Typedef() != "" && type.IsUnresolved() ) {
-        if ( !_table.HasEntry( type.Typedef() ) ) {
-            Error( arg, "undeclared type '~" + type.Typedef() + "'" );
-            return Type::Typedef( type.Typedef(), Type::Void() );
-        }
-        return Type::Typedef( type.Typedef(), _table.GetEntry( type.Typedef() ) );
-    }
-    Type::TypeList list;
-    for ( std::size_t i = 0; i < type.TypeArgs().size(); ++i )
-        list.push_back( Resolve( arg, type.TypeArgs()[ i ] ) );
-    if ( type.IsTuple() )
-        return Type::Tuple( list );
-    if ( type.IsSequence() )
-        return Type::Sequence( list );
-    return Type::Function( Resolve( arg, type.ReturnType() ), list );
 }
 
 /***************************************************************
@@ -59,6 +22,8 @@ Type TypeOperator::Resolve( const Ast& arg, const Type& type )
 IMPLEMENT_EMPTY( ParseError );
 IMPLEMENT_EMPTY( Constant );
 IMPLEMENT_EMPTY( Identifier );
+IMPLEMENT_EMPTY( Argument );
+IMPLEMENT_EMPTY( TypeDef );
 
 IMPLEMENT( TernaryOp )
 {
@@ -73,7 +38,6 @@ IMPLEMENT( BinaryOp )
     Operate( arg._right );
 }
 
-
 IMPLEMENT( UnaryOp )
 {
     Operate( arg._expr );
@@ -83,12 +47,8 @@ IMPLEMENT( TypeOp )
 {
     if ( arg._left )
         Operate( arg._left );
-    else
-        arg._left_type = Resolve( arg, arg._left_type );
     if ( arg._right )
         Operate( arg._right );
-    else
-        arg._right_type = Resolve( arg, arg._right_type );
 }
 
 IMPLEMENT( TupleConstruct )
@@ -120,7 +80,6 @@ IMPLEMENT( FunctionCall )
 IMPLEMENT( Converter )
 {
     Operate( arg._expr );
-    arg._to = Resolve( arg, arg._to );
 }
 
 IMPLEMENT( Body )
@@ -202,25 +161,15 @@ IMPLEMENT( Layer )
     Operate( arg._statement );
 }
 
-IMPLEMENT( Argument )
-{
-    arg._type = Resolve( arg, arg._type );
-}
-
 IMPLEMENT( FuncDef )
 {
-    if ( _declarations )
-        return;
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
         Operate( arg._args[ i ] );
     Operate( arg._expr );
-    arg._return_type = Resolve( arg, arg._return_type );
 }
 
 IMPLEMENT( SeqDef )
 {
-    if ( _declarations )
-        return;
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
         Operate( arg._args[ i ] );
     Operate( arg._statement );
@@ -228,40 +177,12 @@ IMPLEMENT( SeqDef )
 
 IMPLEMENT( VidDef )
 {
-    if ( _declarations )
-        return;
     Operate( arg._frame_count );
     Operate( arg._statement );
 }
 
-IMPLEMENT( TypeDef )
-{
-    if ( !_declarations )
-        return;
-    if ( _declare_globals && arg._modifiers & MODIFIER_LOCAL )
-        return;
-    if ( !_table.AddEntry( arg._id, Resolve( arg, arg._type ) ) )
-        Error( arg, "type '~" + arg._id + "' already declared in this scope" );
-}
-
 IMPLEMENT( Program )
 {
-    if ( _declarations ) {
-        if ( _declare_globals )
-            return;
-        _declare_globals = true;
-        for ( std::size_t i = 0; i < arg._elements.size(); ++i )
-            Operate( arg._elements[ i ] );
-        _declare_globals = false;
-        return;
-    }
-
-    _table.Push();
-    _declarations = true;
     for ( std::size_t i = 0; i < arg._elements.size(); ++i )
         Operate( arg._elements[ i ] );
-    _declarations = false;
-    for ( std::size_t i = 0; i < arg._elements.size(); ++i )
-        Operate( arg._elements[ i ] );
-    _table.Pop();
 }

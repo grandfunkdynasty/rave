@@ -2,6 +2,7 @@
 #include "parse.h"
 #include "ast.h"
 #include "ostatic.h"
+#include "oexpand.h"
 #include "ostring.h"
 
 #pragma warning(push, 0)
@@ -40,6 +41,11 @@ int main( int argc, char** argv )
     StringOperator ostring;
     ostring.Operate( ast );
     std::cout << ostring.Result() << "\n\n";
+
+    std::cout << "expanding...";
+    ExpandOperator oexpand;
+    oexpand.Operate( ast );
+    std::cout << " success\n";
 
     llvm::InitializeNativeTarget();
     llvm::LLVMContext& context = llvm::getGlobalContext();

@@ -1,32 +1,43 @@
-#include "oidentifier.h"
+#include "oconstraint.h"
 #include "astenum.h"
 #include "expr.h"
 #include "defs.h"
 #include "decs.h"
 
-#define IMPLEMENT_OPERATOR IdentifierOperator
+#define IMPLEMENT_OPERATOR SubtreeConstraintOperator
 #define IMPLEMENT_TYPE IMPLEMENT_CONST
 
-IdentifierOperator::IdentifierOperator()
+SubtreeConstraintOperator::SubtreeConstraintOperator()
     : _nested( false )
-    , _allIdentifiers( true )
+    , _all_identifiers( true )
+    , _constant_int( true )
+    , _constant_int_value( 0 )
 {
 }
 
-IdentifierOperator::~IdentifierOperator()
+SubtreeConstraintOperator::~SubtreeConstraintOperator()
 {
 }
 
-bool IdentifierOperator::Nested() const
+bool SubtreeConstraintOperator::Nested() const
 {
     return _nested;
 }
 
-bool IdentifierOperator::AllIdentifiers() const
+bool SubtreeConstraintOperator::AllIdentifiers() const
 {
-    return _allIdentifiers;
+    return _all_identifiers;
 }
 
+bool SubtreeConstraintOperator::ConstantInt() const
+{
+    return _constant_int;
+}
+
+rave_int SubtreeConstraintOperator::ConstantIntValue() const
+{
+    return _constant_int_value;
+}
 
 /***************************************************************
 * Implementations
@@ -34,27 +45,30 @@ bool IdentifierOperator::AllIdentifiers() const
 
 IMPLEMENT( Constant )
 {
-    _allIdentifiers = false;
+    _all_identifiers = false;
+    _constant_int = arg._is_int;
+    if ( _constant_int )
+        _constant_int_value = arg._int_value;
 }
 
 IMPLEMENT( TernaryOp )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
 
 IMPLEMENT( BinaryOp )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
 
 IMPLEMENT( UnaryOp )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
 
 IMPLEMENT( TypeOp )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
 
 IMPLEMENT( TupleConstruct )
@@ -62,27 +76,27 @@ IMPLEMENT( TupleConstruct )
     _nested = true;
     for ( std::size_t i = 0; i < arg._list.size(); ++i )
         Operate( arg._list[ i ] );
+    _constant_int = false;
 }
 
 IMPLEMENT( TupleExtract )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
-
 
 IMPLEMENT( TupleReplace )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
 
 IMPLEMENT( FunctionCall )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
 
 IMPLEMENT( Converter )
 {
-    _allIdentifiers = false;
+    _constant_int = _all_identifiers = false;
 }
 
 IMPLEMENT_EMPTY( ParseError );

@@ -9,7 +9,7 @@ class StringOperator : public ConstOperator {
 public:
 
     StringOperator();
-    ~StringOperator();
+    virtual ~StringOperator();
 
     CONST_OPERATOR;
     std::string Result() const;

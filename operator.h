@@ -54,6 +54,9 @@ class Ast;
 class Operator {
 public:
 
+    Operator() {}
+    virtual ~Operator() {}
+
     #define OPERATION( type )       \
         virtual void Operate##type( type& arg ) = 0
     CLASS_LIST( OPERATION );
@@ -69,6 +72,9 @@ public:
 
 class ConstOperator {
 public:
+
+    ConstOperator() {}
+    virtual ~ConstOperator() {}
     
     #define OPERATION( type )       \
         virtual void Operate##type( const type& arg ) = 0

@@ -164,7 +164,7 @@ TupleConstruct::~TupleConstruct()
 * Tuple extraction
 ***************************************************************/
 
-TupleExtract::TupleExtract( Ast* tuple, rave_int index )
+TupleExtract::TupleExtract( Ast* tuple, Ast* index )
 : _tuple( tuple )
 , _index( index )
 {
@@ -173,13 +173,14 @@ TupleExtract::TupleExtract( Ast* tuple, rave_int index )
 TupleExtract::~TupleExtract()
 {
     delete _tuple;
+    delete _index;
 }
 
 /***************************************************************
 * Tuple replacement
 ***************************************************************/
 
-TupleReplace::TupleReplace( Ast* tuple, rave_int index, Ast* expr )
+TupleReplace::TupleReplace( Ast* tuple, Ast* index, Ast* expr )
 : _tuple( tuple )
 , _index( index )
 , _expr( expr )
@@ -189,6 +190,7 @@ TupleReplace::TupleReplace( Ast* tuple, rave_int index, Ast* expr )
 TupleReplace::~TupleReplace()
 {
     delete _tuple;
+    delete _index;
     delete _expr;
 }
 

@@ -235,12 +235,12 @@ Ast* construct( Node* node, bool helper )
 
     // Tuple extraction
     if ( type == NODE_TUPLE_EXTRACT )
-        return new TupleExtract( construct( t->elem ), node->int_data );
+        return new TupleExtract( construct( t->elem ), construct( t->next->elem ) );
 
     // Tuple replacement
     if ( type == NODE_TUPLE_REPLACE )
-        return new TupleReplace( construct( t->elem ), node->int_data,
-                                 construct( t->next->elem ) );
+        return new TupleReplace( construct( t->elem ), construct( t->next->elem ),
+                                 construct( t->next->next->elem ) );
 
     // Function call
     if ( type == NODE_FUNCTION_CALL ) {

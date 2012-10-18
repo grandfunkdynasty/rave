@@ -42,9 +42,6 @@
     <ClCompile Include="type.cpp">
       <Filter>semantics</Filter>
     </ClCompile>
-    <ClCompile Include="oidentifier.cpp">
-      <Filter>operators</Filter>
-    </ClCompile>
     <ClCompile Include="oirgen.cpp">
       <Filter>operators</Filter>
     </ClCompile>
@@ -61,6 +58,12 @@
       <Filter>operators</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="oexpand.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
+    <ClCompile Include="oconstraint.cpp">
+      <Filter>operators</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="generated\y.output">
@@ -104,9 +107,6 @@
     <ClInclude Include="type.h">
       <Filter>semantics</Filter>
     </ClInclude>
-    <ClInclude Include="oidentifier.h">
-      <Filter>operators</Filter>
-    </ClInclude>
     <ClInclude Include="oirgen.h">
       <Filter>operators</Filter>
     </ClInclude>
@@ -120,6 +120,12 @@
       <Filter>operators</Filter>
     </ClInclude>
     <ClInclude Include="otype.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+    <ClInclude Include="oexpand.h">
+      <Filter>operators</Filter>
+    </ClInclude>
+    <ClInclude Include="oconstraint.h">
       <Filter>operators</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,7 +8,7 @@ class StaticOperator : public Operator {
 public:
 
     StaticOperator( int* errors );
-    ~StaticOperator();
+    virtual ~StaticOperator();
 
     OPERATOR;
 
