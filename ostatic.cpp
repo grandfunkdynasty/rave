@@ -44,7 +44,7 @@ Ast* StaticOperator::Convert( Ast* expr, Type from, Type to )
     if ( from == Type::Void() || to == Type::Void() )
         return expr;
     if ( !from.ConvertsTo( to ) ) {
-        Error( *expr, "promotion: cannot convert '" + from.Typename() + "' to '" + to.Typename() + "'" );
+        Error( *expr, "promotion: cannot convert `" + from.Typename() + "' to `" + to.Typename() + "'" );
         return expr;
     }
     if ( from.Equivalent( to ) )
@@ -70,11 +70,11 @@ IMPLEMENT( Identifier )
 {
     if ( _let_variables ) {
         if ( !_table.AddEntry( arg._id, _let_type ) )
-            Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
+            Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
         return;
     }
     if ( !_table.HasEntry( arg._id ) )
-        Error( arg, "undeclared identifier '" + arg._id + "'" );
+        Error( arg, "undeclared identifier `" + arg._id + "'" );
     _type = _table.GetEntry( arg._id );
 }
 
@@ -88,13 +88,13 @@ IMPLEMENT( TernaryOp )
     Type right = _type;
 
     if ( !expr.ConvertsTo( Type::Bool() ) && expr != Type::Void() )
-        Error( arg, "cannot apply '?' to '" + expr.Typename() + "'" );
+        Error( arg, "cannot apply `?' to `" + expr.Typename() + "'" );
     else
         arg._expr = Convert( arg._expr, expr, Type::Bool() );
     _type = left.Generalise( right );
     if ( _type == Type::Void() && left != Type::Void() && right != Type::Void() )
-        Error( arg, "'?': cannot generalise '" + left.Typename() +
-               "' with '" + right.Typename() + "'" );
+        Error( arg, "`?': cannot generalise `" + left.Typename() +
+               "' with `" + right.Typename() + "'" );
     arg._left = Convert( arg._left, left, _type );
     arg._right = Convert( arg._right, right, _type );
     arg._value_type = _type;
@@ -131,8 +131,8 @@ IMPLEMENT( BinaryOp )
     if ( arg._type == BINARY_OP_OR || arg._type == BINARY_OP_AND ) {
         if ( !( left.ConvertsTo( Type::Bool() ) && left != Type::Void() ) ||
              !( right.ConvertsTo( Type::Bool() ) && right != Type::Void() ) )
-            Error( arg, "cannot apply '" + op + "' to '" +
-                   left.Typename() + "', '" + right.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" +
+                   left.Typename() + "', `" + right.Typename() + "'" );
         else {
             arg._left = Convert( arg._left, left, Type::Bool() );
             arg._right = Convert( arg._right, right, Type::Bool() );
@@ -145,8 +145,8 @@ IMPLEMENT( BinaryOp )
          arg._type == BINARY_OP_LSHIFT || arg._type == BINARY_OP_RSHIFT ) {
         if ( !( left.ConvertsTo( Type::Int() ) && left != Type::Void() ) ||
              !( right.ConvertsTo( Type::Int() ) && right != Type::Void() ) )
-            Error( arg, "cannot apply '" + op + "' to '" +
-                   left.Typename() + "', '" + right.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" +
+                   left.Typename() + "', `" + right.Typename() + "'" );
         else {
             arg._left = Convert( arg._left, left, Type::Int() );
             arg._right = Convert( arg._right, right, Type::Int() );
@@ -158,8 +158,8 @@ IMPLEMENT( BinaryOp )
         Type type = left.Generalise( right );
         if ( type == Type::Void() &&
              left != Type::Void() && right != Type::Void() )
-            Error( arg, "cannot apply '" + op + "' to '" +
-                   left.Typename() + "', '" + right.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" +
+                   left.Typename() + "', `" + right.Typename() + "'" );
         else {
             arg._left = Convert( arg._left, left, type );
             arg._right = Convert( arg._right, right, type );
@@ -173,8 +173,8 @@ IMPLEMENT( BinaryOp )
                left != Type::Void() ) ||
              ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) &&
                right != Type::Void() ) )
-            Error( arg, "cannot apply '" + op + "' to '" +
-                   left.Typename() + "', '" + right.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" +
+                   left.Typename() + "', `" + right.Typename() + "'" );
         else {
             Type type = left.Generalise( right );
             arg._left = Convert( arg._left, left, type );
@@ -191,8 +191,8 @@ IMPLEMENT( BinaryOp )
                left != Type::Void() ) ||
              ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) &&
                right != Type::Void() ) ) {
-            Error( arg, "cannot apply '" + op + "' to '" +
-                   left.Typename() + "', '" + right.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" +
+                   left.Typename() + "', `" + right.Typename() + "'" );
             _type = Type::Float();
         }
         else {
@@ -219,14 +219,14 @@ IMPLEMENT( UnaryOp )
 
     if ( arg._type == UNARY_OP_NOT ) {
         if ( !_type.ConvertsTo( Type::Bool() ) && _type != Type::Void() )
-            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" + _type.Typename() + "'" );
         else
             arg._expr = Convert( arg._expr, _type, Type::Bool() );
         _type = Type::Bool();
     }        
-    if ( arg._type == UNARY_OP_BIT_NOT ) {
+    else if ( arg._type == UNARY_OP_BIT_NOT ) {
         if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
-            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" + _type.Typename() + "'" );
         else
             arg._expr = Convert( arg._expr, _type, Type::Int() );
         _type = Type::Int();
@@ -234,14 +234,14 @@ IMPLEMENT( UnaryOp )
     else if ( arg._type == UNARY_OP_NEGATION ) {
         if ( !_type.ConvertsTo( Type::Int() ) && !_type.ConvertsTo( Type::Float() ) &&
              _type != Type::Void() )
-            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" + _type.Typename() + "'" );
         else
             arg._expr = Convert( arg._expr, _type, _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float() );
         _type = _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float();
     }
     else if ( arg._type == UNARY_OP_FLOOR ) {
         if ( _type != Type::Float() && _type != Type::Void() )
-            Error( arg, "cannot apply '" + op + "' to '" + _type.Typename() + "'" );
+            Error( arg, "cannot apply `" + op + "' to `" + _type.Typename() + "'" );
         _type = Type::Int();
     }
     else {
@@ -292,13 +292,13 @@ IMPLEMENT( TupleExtract )
         return;
 
     if ( !_type.IsTuple() ) {
-        Error( arg, "cannot apply '[]' to '" + _type.Typename() + "'" );
+        Error( arg, "cannot apply `[]' to `" + _type.Typename() + "'" );
         _type = Type::Void();
         return;
     }
     if ( arg._index < 0 || arg._index >= signed( _type.TypeArgs().size() ) ) {
         std::stringstream ss;
-        ss << "cannot apply '[" << arg._index << "]' to '" << _type.Typename() << "'";
+        ss << "cannot apply `[" << arg._index << "]' to `" << _type.Typename() << "'";
         Error( arg, ss.str() );
         _type = Type::Void();
         return;
@@ -319,13 +319,13 @@ IMPLEMENT( TupleReplace )
     }
 
     if ( !tuple.IsTuple() ) {
-        Error( arg, "cannot apply '[/]' to '" + tuple.Typename() + "'" );
+        Error( arg, "cannot apply `[/]' to `" + tuple.Typename() + "'" );
         _type = tuple;
         return;
     }
     if ( arg._index < 0 || arg._index >= signed( tuple.TypeArgs().size() ) ) {
         std::stringstream ss;
-        ss << "cannot apply '[" << arg._index << "/]' to '" << tuple.Typename() << "'";
+        ss << "cannot apply `[" << arg._index << "/]' to `" << tuple.Typename() << "'";
         Error( arg, ss.str() );
         _type = tuple;
         return;
@@ -348,7 +348,7 @@ IMPLEMENT( FunctionCall )
 
     if ( !function.IsFunction() && !function.IsSequence() ) {
         if ( function != Type::Void() )
-            Error( arg, "cannot apply '()' to '" + function.Typename() + "'" );
+            Error( arg, "cannot apply `()' to `" + function.Typename() + "'" );
         _type = Type::Void();
         return;
     }
@@ -356,14 +356,14 @@ IMPLEMENT( FunctionCall )
     for ( std::size_t i = 0; i < list.size() && i < function.TypeArgs().size(); ++i ) {
         if ( !list[ i ].ConvertsTo( function.TypeArgs()[ i ] ) && list[ i ] != Type::Void() &&
              function.TypeArgs()[ i ] != Type::Void() )
-            Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].Typename() +
-                   "' to '" + function.TypeArgs()[ i ].Typename() + "'" );
+            Error( *arg._args[ i ], "argument: cannot convert `" + list[ i ].Typename() +
+                   "' to `" + function.TypeArgs()[ i ].Typename() + "'" );
         else
             arg._args[ i ] = Convert( arg._args[ i ], list[ i ], function.TypeArgs()[ i ] );
     }
     
     if ( list.size() > function.TypeArgs().size() ) {
-        Error( arg, "too many arguments for '" + function.Typename() + "'" );
+        Error( arg, "too many arguments for `" + function.Typename() + "'" );
         _type = function.IsFunction() ?
                 function.ReturnType() : Type::Sequence( Type::TypeList() );
         return;
@@ -387,7 +387,7 @@ IMPLEMENT( Converter )
 {
     Operate( arg._expr );
     if ( !_type.ConvertsTo( arg._to ) )
-        Error( arg, "cannot convert '" + _type.Typename() + "' to '" + arg._to.Typename() + "'" );
+        Error( arg, "cannot convert `" + _type.Typename() + "' to `" + arg._to.Typename() + "'" );
 }
 
 IMPLEMENT( Body )
@@ -411,8 +411,8 @@ IMPLEMENT( Return )
     Operate( arg._expr );
 
     if ( !_type.ConvertsTo( _return_type ) && _type != Type::Void() )
-        Error( arg, "return value: cannot convert '" + _type.Typename() +
-                    "' to '" + _return_type.Typename() + "'" );
+        Error( arg, "return value: cannot convert `" + _type.Typename() +
+                    "' to `" + _return_type.Typename() + "'" );
     else
         arg._expr = Convert( arg._expr, _type, _return_type );
     _return_path = true;
@@ -425,8 +425,8 @@ IMPLEMENT( Guard )
     _return_path = false;
     Operate( arg._expr );
     if ( !_type.ConvertsTo( Type::Bool() ) && _type != Type::Void() )
-        Error( arg, "condition: cannot convert '" + _type.Typename() +
-               "' to '" + Type::Bool().Typename() + "'" );
+        Error( arg, "condition: cannot convert `" + _type.Typename() +
+               "' to `" + Type::Bool().Typename() + "'" );
     else
         arg._expr = Convert( arg._expr, _type, Type::Bool() );
     Operate( arg._then );
@@ -488,13 +488,13 @@ IMPLEMENT( Loop )
     Operate( arg._end );
     Type end = _type;
     if ( !begin.ConvertsTo( Type::Int() ) && begin != Type::Void() )
-        Error( arg, "loop index: cannot convert '" + begin.Typename() +
-               "' to '" + Type::Int().Typename() + "'" );
+        Error( arg, "loop index: cannot convert `" + begin.Typename() +
+               "' to `" + Type::Int().Typename() + "'" );
     else
         arg._begin = Convert( arg._begin, _type, Type::Int() );
     if ( !end.ConvertsTo( Type::Int() ) && end != Type::Void() )
-        Error( arg, "loop index: cannot convert '" + end.Typename() +
-               "' to '" + Type::Int().Typename() + "'" );
+        Error( arg, "loop index: cannot convert `" + end.Typename() +
+               "' to `" + Type::Int().Typename() + "'" );
     else
         arg._end = Convert( arg._end, _type, Type::Int() );
 
@@ -526,7 +526,7 @@ IMPLEMENT( SequenceCall )
 
     if ( !sequence.IsSequence() ) {
         if ( sequence != Type::Void() )
-            Error( arg, "cannot call '" + sequence.Typename() + "'" );
+            Error( arg, "cannot call `" + sequence.Typename() + "'" );
         _type = Type::Void();
         return;
     }
@@ -534,17 +534,17 @@ IMPLEMENT( SequenceCall )
     for ( std::size_t i = 0; i < list.size() && i < sequence.TypeArgs().size(); ++i ) {
         if ( !list[ i ].ConvertsTo( sequence.TypeArgs()[ i ] ) && list[ i ] != Type::Void() &&
              sequence.TypeArgs()[ i ] != Type::Void() )
-            Error( *arg._args[ i ], "argument: cannot convert '" + list[ i ].Typename() +
-                   "' to '" + sequence.TypeArgs()[ i ].Typename() + "'" );
+            Error( *arg._args[ i ], "argument: cannot convert `" + list[ i ].Typename() +
+                   "' to `" + sequence.TypeArgs()[ i ].Typename() + "'" );
         else
             arg._args[ i ] = Convert( arg._args[ i ], list[ i ], sequence.TypeArgs()[ i ] );
     }
     
     if ( list.size() > sequence.TypeArgs().size() )
-        Error( arg, "too many arguments for '" + sequence.Typename() + "'" );
+        Error( arg, "too many arguments for `" + sequence.Typename() + "'" );
 
     if ( list.size() < sequence.TypeArgs().size() )
-        Error( arg, "too few arguments for '" + sequence.Typename() + "'" );
+        Error( arg, "too few arguments for `" + sequence.Typename() + "'" );
 
     _type = Type::Void();
 }
@@ -571,21 +571,21 @@ IMPLEMENT( Layer )
         Operate( arg._order );
         order = _type;
         if ( arg._type & LAYER_BASE )
-            Error( arg, "layer index illegal on 'base' layer" );
+            Error( arg, "layer index illegal on `base' layer" );
     }
     else if ( arg._type & LAYER_COPY )
-        Error( arg, "layer index required on 'copy' layer" );
+        Error( arg, "layer index required on `copy' layer" );
     else if ( arg._type & LAYER_LAYER )
-        Error( arg, "layer index required on 'layer' layer" );
+        Error( arg, "layer index required on `layer' layer" );
     if ( arg._fx ) {
         Operate( arg._fx );
         fx = _type;
         if ( arg._type & LAYER_BASE )
-            Error( arg, "merge fx illegal on 'base' layer" );
+            Error( arg, "merge fx illegal on `base' layer" );
     }
     if ( arg._order && !order.ConvertsTo( Type::Int() ) && order != Type::Void() )
-        Error( arg, "layer index: cannot convert '" + order.Typename() +
-               "' to '" + Type::Int().Typename() + "'" );
+        Error( arg, "layer index: cannot convert `" + order.Typename() +
+               "' to `" + Type::Int().Typename() + "'" );
     else if ( arg._order )
         arg._order = Convert( arg._order, order, Type::Int() );
     // TODO: fx type check and Convert
@@ -600,7 +600,7 @@ IMPLEMENT( Argument )
         return;
     }
     if ( !_table.AddEntry( arg._id, arg._type ) )
-        Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
+        Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
     _type = Type::Void();
 }
 
@@ -613,12 +613,12 @@ IMPLEMENT( FuncDef )
         for ( std::size_t i = 0; i < arg._args.size(); ++i )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Function( arg._return_type, _declaration_list ) ) )
-            Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
+            Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
         return;
     }
 
     if ( arg._modifiers & MODIFIER_LOCAL && _table.Depth() == 0 )
-        Error( arg, "'local' modifier illegal at global scope" );
+        Error( arg, "`local' modifier illegal at global scope" );
     _table.Push();
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
         Operate( arg._args[ i ] );
@@ -626,7 +626,7 @@ IMPLEMENT( FuncDef )
     _return_path = false;
     Operate( arg._expr );
     if ( !_return_path )
-        Error( arg, "'" + arg._id + "': not all code paths return a value" );
+        Error( arg, "`" + arg._id + "': not all code paths return a value" );
     _table.Pop();
     _type = Type::Void();
 }
@@ -640,14 +640,14 @@ IMPLEMENT( SeqDef )
         for ( std::size_t i = 0; i < arg._args.size(); ++i )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Sequence( _declaration_list ) ) )
-            Error( arg, "identifier '" + arg._id + "' already declared in this scope" );
+            Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
         return;
     }
 
     if ( arg._modifiers & MODIFIER_CACHE )
-        Error( arg, "'cache' modifier illegal on sequence definitions" );
+        Error( arg, "`cache' modifier illegal on sequence definitions" );
     if ( arg._modifiers & MODIFIER_LOCAL && _table.Depth() == 0 )
-        Error( arg, "'local' modifier illegal at global scope" );
+        Error( arg, "`local' modifier illegal at global scope" );
     _table.Push();
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
         Operate( arg._args[ i ] );
@@ -662,15 +662,15 @@ IMPLEMENT( VidDef )
         return;
 
     if ( arg._modifiers & MODIFIER_CACHE )
-        Error( arg, "'cache' modifier illegal on video definitions" );
+        Error( arg, "`cache' modifier illegal on video definitions" );
     if ( arg._modifiers & MODIFIER_LOCAL )
-        Error( arg, "'local' modifier illegal on video definitions" );
+        Error( arg, "`local' modifier illegal on video definitions" );
     if ( !_table.AddEntry( "video::" + arg._id, Type::Sequence( Type::TypeList() ) ) )
-        Error( arg, "video '" + arg._id + "' already declared in this scope" );
+        Error( arg, "video `" + arg._id + "' already declared in this scope" );
     Operate( arg._frame_count );
     if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
-        Error( arg, "frame count: cannot convert '" + _type.Typename() +
-               "' to '" + Type::Int().Typename() + "'" );
+        Error( arg, "frame count: cannot convert `" + _type.Typename() +
+               "' to `" + Type::Int().Typename() + "'" );
     else
         arg._frame_count = Convert( arg._frame_count, _type, Type::Int() );
     _table.Push();
@@ -686,9 +686,9 @@ IMPLEMENT( TypeDef )
         return;
 
     if ( arg._modifiers & MODIFIER_CACHE )
-        Error( arg, "'cache' modifier illegal on type definitions" );
+        Error( arg, "`cache' modifier illegal on type definitions" );
     if ( arg._modifiers & MODIFIER_LOCAL && _table.Depth() == 0 )
-        Error( arg, "'local' modifier illegal at global scope" );
+        Error( arg, "`local' modifier illegal at global scope" );
     _type = Type::Void();
 }
 

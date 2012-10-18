@@ -321,16 +321,6 @@ use {
     return T_BINARY_OP_7;
 }
 
-"!" {
-    yylval.type = UNARY_OP_NOT;
-    return T_UNARY_OP;
-}
-
-"\\" {
-    yylval.type = UNARY_OP_BIT_NOT;
-    return T_UNARY_OP;
-}
-
 "^" {
     yylval.type = BINARY_OP_EXP;
     return T_BINARY_OP_10;

@@ -441,7 +441,7 @@ void write_error( const char* name, int line, const char* next, const char* text
     else if ( *parse_errors < 64 ) {
         std::cout << name << " line " << line << ":\t";
         if ( unexpected )
-            std::cout << "unexpected '" << ( *next ? next : "EOF" ) << "': ";
+            std::cout << "unexpected `" << ( *next ? next : "EOF" ) << "': ";
         std::cout << text << "\n";
     }
     ++*parse_errors;

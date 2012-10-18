@@ -10,7 +10,7 @@
 extern int yylex();
 extern int yyline;
 extern const char* yyname;
-extern void write_error( const char* name, int line, const char* next, const char* text, int unexpected );
+extern void write_error( const char* name, int line, const char* next, const char* text, int Converter );
 extern char* yytext;
 struct Node* parse_tree;
 
@@ -178,7 +178,9 @@ t_expr : T_INT_LITERAL                                              { $$ = alloc
        | t_expr '[' T_INT_LITERAL ']'                               { $$ = alloc_node( NODE_TUPLE_EXTRACT, 0 );
                                                                       push_back( $$, $1 );
                                                                       $$->int_data = $3; }
-       | T_UNARY_OP t_expr                                          { $$ = alloc_node( NODE_UNARY_OP, $1 );
+       | '!' t_expr %prec T_UNARY_OP                                { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_NOT );
+                                                                      push_back( $$, $2 ); }
+       | '\\' t_expr %prec T_UNARY_OP                               { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_BIT_NOT );
                                                                       push_back( $$, $2 ); }
        | '-' t_expr %prec T_UNARY_OP                                { $$ = alloc_node( NODE_UNARY_OP, UNARY_OP_NEGATION );
                                                                       push_back( $$, $2 ); }
