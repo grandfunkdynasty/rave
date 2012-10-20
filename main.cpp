@@ -2,7 +2,6 @@
 #include "parse.h"
 #include "ast.h"
 #include "ostatic.h"
-#include "oexpand.h"
 #include "ostring.h"
 
 #pragma warning(push, 0)
@@ -18,6 +17,11 @@
 
 int main( int argc, char** argv )
 {
+    if ( argc == 0 ) {
+        std::cout << "no input file(s) specified\n";
+        return 1;
+    }
+
     int errors = 0;
     parse_set_error( &errors );
     Ast* ast = parse( argv[ 1 ] );
@@ -42,11 +46,6 @@ int main( int argc, char** argv )
     ostring.Operate( ast );
     std::cout << ostring.Result() << "\n\n";
 
-    std::cout << "expanding...";
-    ExpandOperator oexpand;
-    oexpand.Operate( ast );
-    std::cout << " success\n";
-
     llvm::InitializeNativeTarget();
     llvm::LLVMContext& context = llvm::getGlobalContext();
 
@@ -69,7 +68,8 @@ int main( int argc, char** argv )
     delete ast;
     builder.CreateRet( oir.LlvmValue() );
     std::cout << "verifying...";
-    llvm::verifyFunction( *func );
+    if ( llvm::verifyFunction( *func ) )
+        return 1;
     std::cout << " success\n";
 
     std::cout << "ir code:\n";
@@ -90,12 +90,10 @@ int main( int argc, char** argv )
     func->dump();
     std::cout << "\n\n";
 
-    llvm::GenericValue value = execution_engine->runFunction( func, std::vector< llvm::GenericValue >() );
-    std::cout << "value:\n";
-    std::cout << "int ";
-    value.IntVal.dump();
-    std::cout << "\ndouble " << value.DoubleVal << "\npointer " << value.PointerVal << "\n\n";
-
-    //delete module;
+    void* jit_func = execution_engine->getPointerToFunction( func );
+    struct ReturnType { rave_int a; rave_int b; };
+    ReturnType r = ( ( ReturnType (*)() )( intptr_t )jit_func )();
+    std::cout << "int value: " << r.a << ", " << r.b << "\n";
+    delete module;
     return 0;
 }

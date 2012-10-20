@@ -58,9 +58,6 @@
       <Filter>operators</Filter>
     </ClCompile>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="oexpand.cpp">
-      <Filter>operators</Filter>
-    </ClCompile>
     <ClCompile Include="oconstraint.cpp">
       <Filter>operators</Filter>
     </ClCompile>
@@ -120,9 +117,6 @@
       <Filter>operators</Filter>
     </ClInclude>
     <ClInclude Include="otype.h">
-      <Filter>operators</Filter>
-    </ClInclude>
-    <ClInclude Include="oexpand.h">
       <Filter>operators</Filter>
     </ClInclude>
     <ClInclude Include="oconstraint.h">

@@ -282,7 +282,7 @@ IMPLEMENT( TupleConstruct )
         Operate( arg._list[ i ] );
         list.push_back( _type );
     }
-    _type = Type::Tuple( list );
+    _type = arg._value_type = Type::Tuple( list );
 }
 
 IMPLEMENT( TupleExtract )
@@ -314,6 +314,7 @@ IMPLEMENT( TupleExtract )
         _type = Type::Void();
         return;
     }
+    arg._constant_index = index;
     _type = _type.TypeArgs()[ index ];
 }
 
@@ -355,7 +356,8 @@ IMPLEMENT( TupleReplace )
     Type::TypeList list;
     for ( std::size_t i = 0; i < tuple.TypeArgs().size(); ++i )
         list.push_back( signed( i ) == index ? expr : tuple.TypeArgs()[ i ] );
-    _type = Type::Tuple( list );
+    arg._constant_index = index;
+    _type = arg._value_type = Type::Tuple( list );
 }
 
 IMPLEMENT( FunctionCall )

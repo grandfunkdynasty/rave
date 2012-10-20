@@ -39,7 +39,6 @@ private:
 
 #include "otype.h"
 #include "ostatic.h"
-#include "oexpand.h"
 #include "ostring.h"
 #include "oconstraint.h"
 #include "oirgen.h"
@@ -58,7 +57,6 @@ private:
                                                                                 \
     friend void TypeOperator::Operate##type( type& arg );                       \
     friend void StaticOperator::Operate##type( type& arg );                     \
-    friend void ExpandOperator::Operate##type( type& args );                    \
     friend void StringOperator::Operate##type( const type& arg );               \
     friend void SubtreeConstraintOperator::Operate##type( const type& arg );    \
     friend void IrGenOperator::Operate##type( const type& arg )

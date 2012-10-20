@@ -159,6 +159,7 @@ public:
 private:
 
     AstList _list;
+    Type _value_type;
 
 };
 
@@ -178,6 +179,7 @@ private:
 
     Ast* _tuple;
     Ast* _index;
+    rave_int _constant_index;
 
 };
 
@@ -197,7 +199,9 @@ private:
 
     Ast* _tuple;
     Ast* _index;
+    rave_int _constant_index;
     Ast* _expr;
+    Type _value_type;
 
 };
 

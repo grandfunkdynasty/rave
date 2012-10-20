@@ -49,20 +49,38 @@ llvm::Value* IrGenOperator::GenSwitch( llvm::Value* expr, llvm::Value* left, llv
     return phi;
 }
 
-llvm::Value* IrGenOperator::ConstantBool( bool value )
+llvm::Constant* IrGenOperator::ConstantBool( bool value )
 {
     return llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 1, value ? 1 : 0, true ) );
 }
 
-llvm::Value* IrGenOperator::ConstantInt( rave_int value )
+llvm::Constant* IrGenOperator::ConstantInt( rave_int value )
 {
     int64_t t = value; // TODO ~ what if it's too big?
     return llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), *( uint64_t* )&t, true ) );
 }
 
-llvm::Value* IrGenOperator::ConstantFloat( rave_float value )
+llvm::Constant* IrGenOperator::ConstantFloat( rave_float value )
 {
     return llvm::ConstantFP::get( _builder.getContext(), llvm::APFloat( value ) );
+}
+
+llvm::Constant* IrGenOperator::ConstantStruct( const Type::TypeList& tuple_args )
+{
+    std::vector< llvm::Constant* > values;
+    for ( std::size_t i = 0; i < tuple_args.size(); ++i ) {
+        if ( tuple_args[ i ] == Type::Bool() )
+            values.push_back( ConstantBool( false ) );
+        else if ( tuple_args[ i ] == Type::Int() )
+            values.push_back( ConstantInt( 0 ) );
+        else if ( tuple_args[ i ] == Type::Float() )
+            values.push_back( ConstantFloat( 0.0 ) );
+        else if ( tuple_args[ i ].IsTuple() )
+            values.push_back( ConstantStruct( tuple_args[ i ].TypeArgs() ) );
+        else
+            values.push_back( 0 ); // TODO ~ function & sequence defaults?
+    }
+    return llvm::ConstantStruct::get( ( llvm::StructType* )Type::Tuple( tuple_args ).LlvmType( _builder.getContext() ), values );
 }
 
 /***************************************************************
@@ -131,20 +149,20 @@ IMPLEMENT( BinaryOp )
         _value = _builder.CreateAShr( left, right, "shrtmp" );
     else if ( arg._type == BINARY_OP_EQ || arg._type == BINARY_OP_NE ) {
         _value = 0;
-        std::vector< std::vector< rave_int > > _stack;
-        _stack.push_back( std::vector< rave_int >() );
+        std::vector< std::vector< rave_int > > stack;
+        stack.push_back( std::vector< rave_int >() );
 
-        while ( !_stack.empty() ) {
-            std::vector< rave_int > indices = _stack[ _stack.size() - 1 ];
-            _stack.pop_back();
+        while ( !stack.empty() ) {
+            std::vector< rave_int > indices = stack[ stack.size() - 1 ];
+            stack.pop_back();
 
             Type t = arg._op_type;
             for ( std::size_t i = 0; i < indices.size(); ++i )
                 t = t.TypeArgs()[ indices[ i ] ];
             if ( t.IsTuple() ) {
                 for ( std::size_t i = 0; i < t.TypeArgs().size(); ++i ) {
-                    _stack.push_back( indices );
-                    _stack[ _stack.size() - 1 ].push_back( i );
+                    stack.push_back( indices );
+                    stack[ stack.size() - 1 ].push_back( i );
                 }
                 continue;
             }
@@ -155,8 +173,8 @@ IMPLEMENT( BinaryOp )
                 llvm::Value* lt = left;
                 llvm::Value* rt = right;
                 for ( std::size_t i = 0; i < indices.size(); ++i ) {
-                    lt = left; // TODO ~ struct-get left[ indices[ i ] ]
-                    rt = right; // TODO ~ struct-get right[ indices[ i ] ]
+                    lt = _builder.CreateExtractValue( lt, indices[ i ], "cextmp" );
+                    rt = _builder.CreateExtractValue( rt, indices[ i ], "cextmp" );
                 }
                 if ( t == Type::Float() )
                     vt = arg._type == BINARY_OP_EQ ? _builder.CreateFCmpOEQ( lt, rt, "feqtmp" ) : _builder.CreateFCmpONE( lt, rt, "fnetmp" );
@@ -194,8 +212,8 @@ IMPLEMENT( BinaryOp )
             llvm::Value* l_check = _builder.CreateICmpSGE( left, ConstantInt( 0 ), "diftmp" );
             llvm::Value* r_check = _builder.CreateICmpSGE( right, ConstantInt( 0 ), "diftmp" );
             llvm::Value* if_pos = _builder.CreateSDiv( left, right, "divtmp" );
-            llvm::Value* correction = GenSwitch( r_check, _builder.CreateSub( left, _builder.CreateSub( right, ConstantInt( 1 ) ) ),
-                                                          _builder.CreateAdd( left, _builder.CreateAdd( right, ConstantInt( 1 ) ) ), Type::Int() );
+            llvm::Value* correction = GenSwitch( r_check, _builder.CreateSub( left, _builder.CreateSub( right, ConstantInt( 1 ), "dubtmp" ), "dubtmp" ),
+                                                          _builder.CreateAdd( left, _builder.CreateAdd( right, ConstantInt( 1 ), "dddtmp" ), "dddtmp" ), Type::Int() );
             llvm::Value* if_neg = _builder.CreateSDiv( correction, right, "divtmp" );
             _value = GenSwitch( l_check, if_pos, if_neg, Type::Int() );
         }
@@ -244,14 +262,33 @@ IMPLEMENT( TypeOp )
 
 IMPLEMENT( TupleConstruct )
 {
+    ValueList values;
+    for ( std::size_t i = 0; i < arg._list.size(); ++i ) {
+        Operate( arg._list[ i ] );
+        values.push_back( _value );
+    }
+
+    _value = ConstantStruct( arg._value_type.TypeArgs() );
+    for ( std::size_t i = 0; i < arg._list.size(); ++i )
+        _value = _builder.CreateInsertValue( _value, values[ i ], i, "contmp" );
 }
 
 IMPLEMENT( TupleExtract )
 {
+    Operate( arg._tuple );
+    _value = _builder.CreateExtractValue( _value, arg._constant_index, "exttmp" );
 }
 
 IMPLEMENT( TupleReplace )
 {
+    Operate( arg._tuple );
+    llvm::Value* tuple = _value;
+    Operate( arg._expr );
+    llvm::Value* expr = _value;
+
+    _value = ConstantStruct( arg._value_type.TypeArgs() );
+    for ( std::size_t i = 0; i < arg._value_type.TypeArgs().size(); ++i )
+        _value = _builder.CreateInsertValue( _value, signed( i ) == arg._constant_index ? expr : _builder.CreateExtractValue( tuple, i, "rextmp" ), i, "reptmp" );
 }
 
 IMPLEMENT( FunctionCall )

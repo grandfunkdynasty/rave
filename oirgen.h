@@ -27,13 +27,17 @@ private:
     IrGenOperator& operator=( const IrGenOperator& rhs ) { return *this; }
 
     llvm::Value* GenSwitch( llvm::Value* expr, llvm::Value* left, llvm::Value* right, Type type );
-    llvm::Value* ConstantBool( bool value );
-    llvm::Value* ConstantInt( rave_int value );
-    llvm::Value* ConstantFloat( rave_float value );
+
+    llvm::Constant* ConstantBool( bool value );
+    llvm::Constant* ConstantInt( rave_int value );
+    llvm::Constant* ConstantFloat( rave_float value );
+    llvm::Constant* ConstantStruct( const Type::TypeList& tuple_args );
 
     llvm::Value* _value;
     llvm::IRBuilder<>& _builder;
     SymbolTable< llvm::Value* > _table;
+
+    typedef std::vector< llvm::Value* > ValueList;
 
 };
 

@@ -152,6 +152,7 @@ TernaryOp::~TernaryOp()
 
 TupleConstruct::TupleConstruct( const AstList& list )
 : _list( list )
+, _value_type( Type::Void() )
 {
 }
 
@@ -168,6 +169,7 @@ TupleConstruct::~TupleConstruct()
 TupleExtract::TupleExtract( Ast* tuple, Ast* index )
 : _tuple( tuple )
 , _index( index )
+, _constant_index( 0 )
 {
 }
 
@@ -184,7 +186,9 @@ TupleExtract::~TupleExtract()
 TupleReplace::TupleReplace( Ast* tuple, Ast* index, Ast* expr )
 : _tuple( tuple )
 , _index( index )
+, _constant_index( 0 )
 , _expr( expr )
+, _value_type( Type::Void() )
 {
 }
 
