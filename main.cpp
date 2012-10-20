@@ -73,7 +73,7 @@ int main( int argc, char** argv )
     std::cout << " success\n";
 
     std::cout << "ir code:\n";
-    oir.LlvmValue()->dump();
+    func->dump();
     std::cout << "\n\n";
 
     llvm::FunctionPassManager optimiser( module );
@@ -85,6 +85,10 @@ int main( int argc, char** argv )
     optimiser.add( llvm::createCFGSimplificationPass() );
     optimiser.doInitialization();
     optimiser.run( *func );
+
+    std::cout << "optimised ir code:\n";
+    func->dump();
+    std::cout << "\n\n";
 
     llvm::GenericValue value = execution_engine->runFunction( func, std::vector< llvm::GenericValue >() );
     std::cout << "value:\n";

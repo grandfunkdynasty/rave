@@ -21,6 +21,50 @@ llvm::Value* IrGenOperator::LlvmValue() const
     return _value;
 }
 
+llvm::Value* IrGenOperator::GenSwitch( llvm::Value* expr, llvm::Value* left, llvm::Value* right, Type type )
+{
+    llvm::Function* parent = _builder.GetInsertBlock()->getParent();
+    llvm::BasicBlock* left_bb = llvm::BasicBlock::Create( _builder.getContext(), "left", parent );
+    llvm::BasicBlock* right_bb = llvm::BasicBlock::Create( _builder.getContext(), "right" );
+    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create( _builder.getContext(), "merge" );
+
+    _builder.CreateCondBr( expr, left_bb, right_bb );
+    _builder.SetInsertPoint( left_bb );
+
+    _builder.CreateBr( merge_bb );
+    left_bb = _builder.GetInsertBlock();
+
+    parent->getBasicBlockList().push_back( right_bb );
+    _builder.SetInsertPoint( right_bb );
+
+    _builder.CreateBr( merge_bb );
+    right_bb = _builder.GetInsertBlock();
+
+    parent->getBasicBlockList().push_back( merge_bb );
+    _builder.SetInsertPoint( merge_bb );
+    llvm::PHINode* phi = _builder.CreatePHI( type.LlvmType( _builder.getContext() ), 2, "trntmp" );
+      
+    phi->addIncoming( left, left_bb );
+    phi->addIncoming( right, right_bb );
+    return phi;
+}
+
+llvm::Value* IrGenOperator::ConstantBool( bool value )
+{
+    return llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 1, value ? 1 : 0, true ) );
+}
+
+llvm::Value* IrGenOperator::ConstantInt( rave_int value )
+{
+    int64_t t = value; // TODO ~ what if it's too big?
+    return llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), *( uint64_t* )&t, true ) );
+}
+
+llvm::Value* IrGenOperator::ConstantFloat( rave_float value )
+{
+    return llvm::ConstantFP::get( _builder.getContext(), llvm::APFloat( value ) );
+}
+
 /***************************************************************
 * Implementations
 ***************************************************************/
@@ -32,7 +76,7 @@ IMPLEMENT( Converter )
     Operate( arg._expr );
 
     if ( arg._from == Type::Int() && arg._to == Type::Bool() )
-        _value = _builder.CreateICmpNE( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), "tmbool" );
+        _value = _builder.CreateICmpNE( _value, ConstantInt( 0 ), "tmbool" );
     else if ( arg._from == Type::Bool() && arg._to == Type::Int() )
         _value = _builder.CreateZExt( _value, llvm::Type::getInt32Ty( _builder.getContext() ), "tmpint" );
     else if ( arg._from == Type::Int() && arg._to == Type::Float() )
@@ -41,11 +85,10 @@ IMPLEMENT( Converter )
 
 IMPLEMENT( Constant )
 {
-    int64_t t = arg._int_value; // TODO ~ what if it's too big?
     if ( arg._is_int )
-        _value = llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( arg._int_value ), *( uint64_t* )&t, true ) );
+        _value = ConstantInt( arg._int_value );
     else
-        _value = llvm::ConstantFP::get( _builder.getContext(), llvm::APFloat( arg._float_value ) );
+        _value = ConstantFloat( arg._float_value );
 }
 
 IMPLEMENT( Identifier )
@@ -57,35 +100,12 @@ IMPLEMENT( TernaryOp )
 {
     Operate( arg._expr );
     llvm::Value* expr = _value;
-
-    llvm::Function* parent = _builder.GetInsertBlock()->getParent();
-    llvm::BasicBlock* left_bb = llvm::BasicBlock::Create( _builder.getContext(), "left", parent );
-    llvm::BasicBlock* right_bb = llvm::BasicBlock::Create( _builder.getContext(), "right" );
-    llvm::BasicBlock* merge_bb = llvm::BasicBlock::Create( _builder.getContext(), "merge" );
-
-    _builder.CreateCondBr( expr, left_bb, right_bb );
-    _builder.SetInsertPoint( left_bb );
-
     Operate( arg._left );
     llvm::Value* left = _value;
-    _builder.CreateBr( merge_bb );
-    left_bb = _builder.GetInsertBlock();
-
-    parent->getBasicBlockList().push_back( right_bb );
-    _builder.SetInsertPoint( right_bb );
-
     Operate( arg._right );
     llvm::Value* right = _value;
-    _builder.CreateBr( merge_bb );
-    right_bb = _builder.GetInsertBlock();
 
-    parent->getBasicBlockList().push_back( merge_bb );
-    _builder.SetInsertPoint( merge_bb );
-    llvm::PHINode* phi = _builder.CreatePHI( arg._value_type.LlvmType( _builder.getContext() ), 2, "trntmp" );
-      
-    phi->addIncoming( left, left_bb );
-    phi->addIncoming( right, right_bb );
-    _value = phi;
+    _value = GenSwitch( expr, left, right, arg._value_type );
 }
 
 IMPLEMENT( BinaryOp )
@@ -130,7 +150,7 @@ IMPLEMENT( BinaryOp )
             }
             llvm::Value* vt = 0;
             if ( t.IsFunction() || t.IsSequence() ) // TODO ~ right now just false
-                vt = llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 1, arg._type == BINARY_OP_EQ ? 0 : 1, false ) );
+                vt = ConstantBool( arg._type != BINARY_OP_EQ );
             else {
                 llvm::Value* lt = left;
                 llvm::Value* rt = right;
@@ -167,12 +187,31 @@ IMPLEMENT( BinaryOp )
     else if ( arg._type == BINARY_OP_MUL )
         _value = arg._op_type == Type::Int() ? _builder.CreateMul(  left, right, "multmp" )
                                              : _builder.CreateFMul( left, right, "fultmp" );
-    else if ( arg._type == BINARY_OP_DIV )
-        _value = arg._op_type == Type::Int() ? _builder.CreateSDiv( left, right, "divtmp" ) // TODO: this rounds towards 0, want round towards -inf!
-                                             : _builder.CreateFDiv( left, right, "fivtmp" );
-    else if ( arg._type == BINARY_OP_MOD )
-        _value = arg._op_type == Type::Int() ? _builder.CreateSRem( left, right, "modtmp" ) // TODO: similarly wrong. IE want euclidean division rather than floor division
-                                             : _builder.CreateFRem( left, right, "fodtmp" ); // TODO: also weird but fmod doesn't match up with fdiv anyway so does it matter?
+    else if ( arg._type == BINARY_OP_DIV ) {
+        if ( arg._op_type != Type::Int() )
+            _value = _builder.CreateFDiv( left, right, "fivtmp" );
+        else {
+            llvm::Value* l_check = _builder.CreateICmpSGE( left, ConstantInt( 0 ), "diftmp" );
+            llvm::Value* r_check = _builder.CreateICmpSGE( right, ConstantInt( 0 ), "diftmp" );
+            llvm::Value* if_pos = _builder.CreateSDiv( left, right, "divtmp" );
+            llvm::Value* correction = GenSwitch( r_check, _builder.CreateSub( left, _builder.CreateSub( right, ConstantInt( 1 ) ) ),
+                                                          _builder.CreateAdd( left, _builder.CreateAdd( right, ConstantInt( 1 ) ) ), Type::Int() );
+            llvm::Value* if_neg = _builder.CreateSDiv( correction, right, "divtmp" );
+            _value = GenSwitch( l_check, if_pos, if_neg, Type::Int() );
+        }
+    }
+    else if ( arg._type == BINARY_OP_MOD ) {
+        if ( arg._op_type != Type::Int() )
+            _value = _builder.CreateFRem( left, right, "fodtmp" );
+        else {
+            llvm::Value* l_check = _builder.CreateICmpSGE( left, ConstantInt( 0 ), "miftmp" );
+            llvm::Value* r_check = _builder.CreateICmpSGE( right, ConstantInt( 0 ), "miftmp" );
+            llvm::Value* if_pos = _builder.CreateSRem( left, right, "modtmp" );
+            llvm::Value* r_abs = GenSwitch( r_check, right, _builder.CreateSub( ConstantInt( 0 ), right, "mubtmp" ), Type::Int() );
+            llvm::Value* if_neg = _builder.CreateAdd( r_abs, if_pos, "mddtmp" );
+            _value = GenSwitch( l_check, if_pos, if_neg, Type::Int() );
+        }
+    }
     else if ( arg._type == BINARY_OP_EXP )
         _value = 0; // TODO
 }
@@ -180,19 +219,23 @@ IMPLEMENT( BinaryOp )
 IMPLEMENT( UnaryOp )
 {
     Operate( arg._expr );
+    uint64_t max = UINT64_MAX;
 
     if ( arg._type == UNARY_OP_NOT )
-        _value = _builder.CreateICmpEQ( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), "nottmp" );
+        _value = _builder.CreateICmpEQ( _value, ConstantInt( 0 ), "nottmp" );
     else if ( arg._type == UNARY_OP_BIT_NOT )
-        _value = _builder.CreateXor( _value, llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), UINT64_MAX, true ) ), "bnttmp" );
+        _value = _builder.CreateXor( _value, ConstantInt( ( rave_int )max ), "bnttmp" );
     else if ( arg._type == UNARY_OP_NEGATION ) {
         if ( arg._op_type == Type::Int() )
-            _value = _builder.CreateSub( llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), 0, true ) ), _value, "negtmp" );
+            _value = _builder.CreateSub( ConstantInt( 0 ), _value, "negtmp" );
         else
-            _value = _builder.CreateFSub( llvm::ConstantFP::get( _builder.getContext(), llvm::APFloat( 0.0 ) ), _value, "fngtmp" );
+            _value = _builder.CreateFSub( ConstantFloat( 0.0 ), _value, "fngtmp" );
     }
-    else if ( arg._type == UNARY_OP_FLOOR )
-        _value = _builder.CreateFPToSI( _value, llvm::Type::getInt32Ty( _builder.getContext() ), "flrtmp" ); // TODO: this rounds towards 0, want round towards -inf!
+    else if ( arg._type == UNARY_OP_FLOOR ) {
+        llvm::Value* check = _builder.CreateFCmpOGE( _value, ConstantFloat( 0.0 ), "fiftmp" );
+        llvm::Value* floor = _builder.CreateFPToSI( _value, llvm::Type::getInt32Ty( _builder.getContext() ), "flrtmp" );
+       _value = GenSwitch( check, floor, _builder.CreateSub( floor, ConstantInt( 1 ) ), Type::Int() );
+    }
 }
 
 IMPLEMENT( TypeOp )

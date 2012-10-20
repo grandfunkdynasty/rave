@@ -26,6 +26,11 @@ private:
 
     IrGenOperator& operator=( const IrGenOperator& rhs ) { return *this; }
 
+    llvm::Value* GenSwitch( llvm::Value* expr, llvm::Value* left, llvm::Value* right, Type type );
+    llvm::Value* ConstantBool( bool value );
+    llvm::Value* ConstantInt( rave_int value );
+    llvm::Value* ConstantFloat( rave_float value );
+
     llvm::Value* _value;
     llvm::IRBuilder<>& _builder;
     SymbolTable< llvm::Value* > _table;
