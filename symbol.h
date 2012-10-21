@@ -74,7 +74,7 @@ std::size_t SymbolTable< T >::Depth() const
 template< typename T >
 bool SymbolTable< T >::AddEntry( const std::string& id, const T& t )
 {
-    ScopeTable& scope = _entry_stack[ Depth() ];
+    auto& scope = _entry_stack[ Depth() ];
     return scope.insert( std::make_pair( id, t ) ).second;
 }
 
@@ -82,8 +82,8 @@ template< typename T >
 bool SymbolTable< T >::HasEntry( const std::string& id ) const
 {
     for ( std::size_t i = Depth(); ; --i ) {
-        const ScopeTable& scope = _entry_stack[ i ];
-        ScopeTable::const_iterator it = scope.find( id );
+        const auto& scope = _entry_stack[ i ];
+        auto it = scope.find( id );
         if ( it != scope.end() )
             return true;
         if ( !i )
@@ -96,8 +96,8 @@ template< typename T >
 const T& SymbolTable< T >::GetEntry( const std::string& id ) const
 {
     for ( std::size_t i = Depth(); ; --i ) {
-        const ScopeTable& scope = _entry_stack[ i ];
-        ScopeTable::const_iterator it = scope.find( id );
+        const auto& scope = _entry_stack[ i ];
+        auto it = scope.find( id );
         if ( it != scope.end() )
             return it->second;
         if ( !i )

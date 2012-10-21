@@ -638,6 +638,7 @@ IMPLEMENT( FuncDef )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Function( arg._return_type, _declaration_list ) ) )
             Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
+        arg._arg_types = _declaration_list;
         return;
     }
 
@@ -665,6 +666,7 @@ IMPLEMENT( SeqDef )
             Operate( arg._args[ i ] );
         if ( !_table.AddEntry( arg._id, Type::Sequence( _declaration_list ) ) )
             Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
+        arg._arg_types = _declaration_list;
         return;
     }
 

@@ -216,8 +216,10 @@ expr_list : expr                                                    { $$ = alloc
 * Functions
 ***************************************************************/
 
-body : '{' body_list '}'                                            { $$ = $2;
-                                                                      set_type( $$, NODE_BODY, 0 ); }
+body : '{' body body_list '}'                                       { $$ = $3;
+                                                                      set_type( $$, NODE_BODY, 0 );
+                                                                      push_front( $$, $2 ); }
+     | '{' body '}'                                                 { $$ = $2; }
      | expr ':' body                                                { $$ = alloc_node( NODE_GUARD, 0 );
                                                                       push_back( $$, $1 );
                                                                       push_back( $$, $3 ); }
@@ -231,7 +233,8 @@ body : '{' body_list '}'                                            { $$ = $2;
      
 body_list : body_list body                                          { $$ = $1;
                                                                       push_back( $$, $2 ); }
-          |                                                         { $$ = alloc_node( NODE_UNDEFINED, 0 ); }
+          | body                                                    { $$ = alloc_node( NODE_UNDEFINED, 0 );
+                                                                      push_back( $$, $1 ); }
           ;
      
 /***************************************************************
@@ -418,7 +421,7 @@ program_scope : program_scope '{' program_scope '}'                 { $$ = $1;
                                                                       parse_tree = $$; }
               ;
         
-program : /*program_scope*/expr                                     { $$ = $1;
+program : program_scope                                             { $$ = $1;
                                                                       parse_tree = $$; }
         ;
 

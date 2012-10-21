@@ -62,7 +62,7 @@ public:
 
 Node* alloc_node( int type, int sub_type )
 {
-    Node* node = new NodeImpl();
+    auto node = new NodeImpl();
 
     node->type = type;
     node->sub_type = sub_type;
@@ -79,7 +79,7 @@ Node* alloc_node( int type, int sub_type )
 
 Node* alloc_binary_node( int sub_type, Node* left, Node* right )
 {
-    Node* node = alloc_node( NODE_BINARY_OP, sub_type );
+    auto node = alloc_node( NODE_BINARY_OP, sub_type );
     if ( left )
         push_back( node, left );
     if ( right )
@@ -89,7 +89,7 @@ Node* alloc_binary_node( int sub_type, Node* left, Node* right )
 
 Node* alloc_typeop_node( int sub_type, Node* left, Node* right )
 {
-    Node* node = alloc_node( NODE_TYPE_OP, sub_type );
+    auto node = alloc_node( NODE_TYPE_OP, sub_type );
     if ( left )
         push_back( node, left );
     if ( right )
@@ -112,7 +112,7 @@ void push_front( Node* parent, Node* child )
     if ( !parent || !child )
         return;
 
-    NodeList* list = new NodeListImpl();
+    auto list = new NodeListImpl();
     list->elem = child;
     list->next = parent->begin;
 
@@ -126,7 +126,7 @@ void push_back( Node* parent, Node* child )
     if ( !parent || !child )
         return;
 
-    NodeList* list = new NodeListImpl();
+    auto list = new NodeListImpl();
     list->elem = child;
     list->next = 0;
 
@@ -160,7 +160,7 @@ Type construct_type( Node* node )
     }
 
     Type::TypeList list;
-    NodeList* t = node->begin;
+    auto t = node->begin;
     for ( t = node->sub_type == TYPE_FUNCTION ? t->next : t; t; t = t->next )
         list.push_back( construct_type( t->elem ) );
     if ( node->sub_type == TYPE_FUNCTION ) {
@@ -174,10 +174,10 @@ Ast* construct( Node* node );
 
 Ast* construct( Node* node, bool helper )
 {
-    (void)helper;
+    ( void )helper;
     int type = node->type;
     int sub_type = node->sub_type;
-    NodeList* t = node->begin;
+    auto t = node->begin;
 
     // Parse error
     if ( type == NODE_ERROR )
@@ -244,7 +244,7 @@ Ast* construct( Node* node, bool helper )
 
     // Function call
     if ( type == NODE_FUNCTION_CALL ) {
-        Ast* function = construct( t->elem );
+        auto function = construct( t->elem );
         Ast::AstList list;
         for ( t = t->next; t; t = t->next )
             list.push_back( construct( t->elem ) );
@@ -265,11 +265,11 @@ Ast* construct( Node* node, bool helper )
 
     // Guard
     if ( type == NODE_GUARD ) {
-        Ast* expr = construct( t->elem );
-        Ast* then = construct( t->next->elem );
+        auto expr = construct( t->elem );
+        auto then = construct( t->next->elem );
         if ( t->next == node->end )
             return new Guard( expr, then );
-        Ast* otherwise = construct( t->next->next->elem );
+        auto otherwise = construct( t->next->next->elem );
         return new Guard( expr, then, otherwise );
     }
 
@@ -279,7 +279,7 @@ Ast* construct( Node* node, bool helper )
 
     // Block
     if ( type == NODE_BLOCK ) {
-        Ast* scope_defs = construct( t->elem );
+        auto scope_defs = construct( t->elem );
         Ast::AstList list;
         for ( t = t->next; t; t = t->next )
             list.push_back( construct( t->elem ) );
@@ -305,7 +305,7 @@ Ast* construct( Node* node, bool helper )
 
     // Sequence call
     if ( type == NODE_SEQUENCE_CALL ) {
-        Ast* sequence = construct( t->elem );
+        auto sequence = construct( t->elem );
         Ast::AstList list;
         for ( t = t->next; t; t = t->next )
             list.push_back( construct( t->elem ) );
@@ -346,7 +346,7 @@ Ast* construct( Node* node, bool helper )
         Ast::AstList list;
         for ( t = t->next; t != node->end; t = t->next )
             list.push_back( construct( t->elem ) );
-        Ast* expr = construct( t->elem );
+        auto expr = construct( t->elem );
         return new FuncDef( sub_type, return_type, node->string_data, list, expr );
     }
 
@@ -355,7 +355,7 @@ Ast* construct( Node* node, bool helper )
         Ast::AstList list;
         for ( ; t != node->end; t = t->next )
             list.push_back( construct( t->elem ) );
-        Ast* expr = construct( t->elem );
+        auto expr = construct( t->elem );
         return new SeqDef( sub_type, node->string_data, list, expr );
     }
 
@@ -381,7 +381,7 @@ Ast* construct( Node* node, bool helper )
 
 Ast* construct( Node* node )
 {
-    Ast* r = construct( node, true );
+    auto r = construct( node, true );
     if ( r )
         r->SetInfo( node->file, node->line );
     return r;
@@ -417,7 +417,7 @@ Ast* parse( const std::string& path )
 
     if ( !parse_tree )
         return 0;
-    Ast* parse_ast = construct( parse_tree );
+    auto parse_ast = construct( parse_tree );
     delete parse_tree;
     return parse_ast;
 }

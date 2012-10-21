@@ -15,29 +15,35 @@
 class IrGenOperator : public ConstOperator {
 public:
 
-    IrGenOperator( llvm::IRBuilder<>& builder );
+    IrGenOperator( llvm::Module* module, llvm::IRBuilder<>& builder );
     virtual ~IrGenOperator();
 
     CONST_OPERATOR;
-
-    llvm::Value* LlvmValue() const;
 
 private:
 
     IrGenOperator& operator=( const IrGenOperator& rhs ) { return *this; }
 
     llvm::Value* GenSwitch( llvm::Value* expr, llvm::Value* left, llvm::Value* right, Type type );
+    llvm::Value* GenConvert( llvm::Value* expr, Type from, Type to );
 
     llvm::Constant* ConstantBool( bool value );
     llvm::Constant* ConstantInt( rave_int value );
     llvm::Constant* ConstantFloat( rave_float value );
     llvm::Constant* ConstantStruct( const Type::TypeList& tuple_args );
 
+    typedef std::vector< llvm::Value* > ValueList;
+    typedef std::vector< llvm::Type* > LlvmTypeList;
+
     llvm::Value* _value;
+    llvm::Module* _module;
     llvm::IRBuilder<>& _builder;
     SymbolTable< llvm::Value* > _table;
 
-    typedef std::vector< llvm::Value* > ValueList;
+    Type _return_type;
+    llvm::Function::arg_iterator _arg_iterator;
+    llvm::BasicBlock* _success_bb;
+    llvm::BasicBlock* _fallthrough_bb;
 
 };
 

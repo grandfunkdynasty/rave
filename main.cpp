@@ -24,7 +24,7 @@ int main( int argc, char** argv )
 
     int errors = 0;
     parse_set_error( &errors );
-    Ast* ast = parse( argv[ 1 ] );
+    auto ast = parse( argv[ 1 ] );
     if ( !ast ) {
         std::cout << errors << " error(s) detected.\n";
         return 1;
@@ -47,34 +47,28 @@ int main( int argc, char** argv )
     std::cout << ostring.Result() << "\n\n";
 
     llvm::InitializeNativeTarget();
-    llvm::LLVMContext& context = llvm::getGlobalContext();
+    auto& context = llvm::getGlobalContext();
 
-    llvm::Module* module = new llvm::Module( "anonymous", context );
     std::string rs;
-    llvm::ExecutionEngine* execution_engine = llvm::EngineBuilder( module ).setErrorStr( &rs ).create();
+    auto module = new llvm::Module( "anonymous", context );
+    auto execution_engine = llvm::EngineBuilder( module ).setErrorStr( &rs ).create();
     if ( !execution_engine ) {
         std::cout << "fatal error:\t" << rs << "\n";
         return 1;
     }
 
     llvm::IRBuilder<> builder( context );
-    llvm::FunctionType* type = llvm::FunctionType::get( ostatic.InferredType().LlvmType( context ), std::vector< llvm::Type* >(), false );
-    llvm::Function* func = llvm::Function::Create( type, llvm::Function::ExternalLinkage, "expression", module );
-    llvm::BasicBlock *bb = llvm::BasicBlock::Create( context, "entry", func );
-    builder.SetInsertPoint( bb );
-
-    IrGenOperator oir( builder );
+    IrGenOperator oir( module, builder );
     oir.Operate( ast );
     delete ast;
-    builder.CreateRet( oir.LlvmValue() );
-    std::cout << "verifying...";
-    if ( llvm::verifyFunction( *func ) )
-        return 1;
-    std::cout << " success\n";
 
     std::cout << "ir code:\n";
-    func->dump();
+    module->dump();
     std::cout << "\n\n";
+    std::cout << "verifying...";
+    if ( llvm::verifyModule( *module ) )
+        return 1;
+    std::cout << " success\n";
 
     llvm::FunctionPassManager optimiser( module );
     optimiser.add( new llvm::TargetData( *execution_engine->getTargetData() ) );
@@ -84,15 +78,17 @@ int main( int argc, char** argv )
     optimiser.add( llvm::createGVNPass() );
     optimiser.add( llvm::createCFGSimplificationPass() );
     optimiser.doInitialization();
-    optimiser.run( *func );
+    auto& list = module->getFunctionList();
+    for ( auto i = list.begin(); i != list.end(); ++i )
+        optimiser.run( *i );
 
     std::cout << "optimised ir code:\n";
-    func->dump();
+    module->dump();
     std::cout << "\n\n";
 
-    void* jit_func = execution_engine->getPointerToFunction( func );
+    void* jit_func = execution_engine->getPointerToFunction( &list.back() );
     struct ReturnType { rave_int a; rave_int b; };
-    ReturnType r = ( ( ReturnType (*)() )( intptr_t )jit_func )();
+    ReturnType r = ( ( ReturnType (*)( rave_int ) )( intptr_t )jit_func )( 5 );
     std::cout << "int value: " << r.a << ", " << r.b << "\n";
     delete module;
     return 0;

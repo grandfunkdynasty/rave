@@ -43,6 +43,7 @@ private:
     std::string _id;
     AstList _args;
     Ast* _expr;
+    Type::TypeList _arg_types;
 
 };
 
@@ -65,6 +66,7 @@ private:
     std::string _id;
     AstList _args;
     Ast* _statement;
+    Type::TypeList _arg_types;
 
 };
 
