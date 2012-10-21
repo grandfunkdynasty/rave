@@ -1,30 +1,18 @@
-int add(int a, int b) a + b;
-
-(int x, int y) foo(int a)
-{
-    x = (a, a):
-    y = (x, x):
-    ((q, (e, r)), ((t, y), w)) = ((x, x), y): {
-        a > 10: (r, t);
-        a >= 5: (n,m)=q: (add(n,m),add(n,m));
-        x;
-    }
-}
-
 fibonacci {
-    test { int one() 1; }
-    type {(int n, int xn, int xn1) ~i3;}
-    local int fast_helper(~type.i3 t)
+    local types {
+        (int n, int x_n, int x_n1) ~triple;
+    }
+    local int fast_helper(~types.triple t)
     {
-        (n, xn, xn1) = t: {
-            n == 0: xn1;
-            fast_helper((n - 1, xn1, xn + xn1));
+        (n, x_n, x_n1) = t: {
+            n == 0: x_n1;
+            fast_helper((n - 1, x_n1, x_n + x_n1));
         }
     }
     int fast(int n)
     {
         n <= 1: 1;
-        fast_helper((n - 1, test.one(), test.one()));
+        fast_helper((n - 1, 1, 1));
     }
     int slow(int n)
     {
@@ -33,6 +21,4 @@ fibonacci {
     }
 }
 
-int ~foo_type;
-~fibonacci.type.i3 boo(int n) (n, n, n);
-(int,int) fool(int n) (n, fibonacci.fast(n));
+(int, int) test(int n) (n, fibonacci.fast(n));

@@ -62,9 +62,6 @@ int main( int argc, char** argv )
     oir.Operate( ast );
     delete ast;
 
-    /*std::cout << "ir code:\n";
-    module->dump();
-    std::cout << "\n\n";*/
     std::cout << "verifying...";
     if ( llvm::verifyModule( *module ) )
         return 1;
@@ -92,9 +89,9 @@ int main( int argc, char** argv )
     for ( auto i = list.begin(); i != list.end(); ++i )
         optimiser.run( *i );
 
-    std::cout << "optimised ir code:\n";
+    std::cout << "ir code:\n";
     module->dump();
-    std::cout << "\n\n";
+    std::cout << "\n";
 
     void* jit_func = execution_engine->getPointerToFunction( &list.back() );
     struct ReturnType { rave_int a; rave_int b; };

@@ -367,7 +367,9 @@ IMPLEMENT( Program )
     for ( std::size_t i = 0; i < arg._elements.size(); ++i ) {
         _result << Indent();
         Operate( arg._elements[ i ] );
-        _result << "\n\n";
+        _result << "\n";
+        if ( i < arg._elements.size() - 1 )
+            _result << "\n";
     }
     --_indent;
     _result << Indent() << "}";
