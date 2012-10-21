@@ -323,7 +323,16 @@ IMPLEMENT( TupleReplace )
 
 IMPLEMENT( FunctionCall )
 {
-    // TODO
+    Operate( arg._function );
+    auto function = _value;
+
+    std::vector< llvm::Value* > args;
+    for ( std::size_t i = 0; i < arg._args.size(); ++i ) {
+        Operate( arg._args[ i ] );
+        args.push_back( _value );
+    }
+
+    _value = _builder.CreateCall( function, args, "cal" );
 }
 
 IMPLEMENT( Body )
@@ -438,23 +447,14 @@ IMPLEMENT( Argument )
 
 IMPLEMENT( FuncDef )
 {
-    LlvmTypeList types;
-    for ( std::size_t i = 0; i < arg._arg_types.size(); ++i )
-        types.push_back( arg._arg_types[ i ].LlvmType( _builder.getContext() ) );
-    auto type =
-        llvm::FunctionType::get( arg._return_type.LlvmType( _builder.getContext() ), types, false );
-    auto linkage = arg._modifiers & MODIFIER_LOCAL ?
-        llvm::Function::PrivateLinkage : llvm::Function::ExternalLinkage;
-    auto func =
-        llvm::Function::Create( type, linkage, arg._id, _module );
-
     _return_type = arg._return_type;
     _table.Push();
-    _arg_iterator = func->arg_begin();
-    for ( std::size_t i = 0; _arg_iterator != func->arg_end(); ++_arg_iterator, ++i )
+    _arg_iterator = arg._llvm_function->arg_begin();
+    auto end = arg._llvm_function->arg_end();
+    for ( std::size_t i = 0; _arg_iterator != end; ++_arg_iterator, ++i )
         Operate( arg._args[ i ] );
     auto bb =
-        llvm::BasicBlock::Create( _builder.getContext(), "entry", func );
+        llvm::BasicBlock::Create( _builder.getContext(), "entry", arg._llvm_function );
     _builder.SetInsertPoint( bb );
     Operate( arg._expr );
     _builder.CreateRet( _value );
@@ -476,6 +476,8 @@ IMPLEMENT( TypeDef )
 IMPLEMENT( Program )
 {
     _table.Push();
+    DeclareOperator odeclare( *this );
+    odeclare.Operate( &arg );
     for ( std::size_t i = 0; i < arg._elements.size(); ++i )
         Operate( arg._elements[ i ] );
     _table.Pop();

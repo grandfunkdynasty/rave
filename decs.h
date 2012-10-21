@@ -3,6 +3,9 @@
 
 #include "ast.h"
 #include "type.h"
+namespace llvm {
+    class Function;
+}
 
 /***************************************************************
 * Argument
@@ -43,7 +46,8 @@ private:
     std::string _id;
     AstList _args;
     Ast* _expr;
-    Type::TypeList _arg_types;
+    mutable Type::TypeList _arg_types;
+    mutable llvm::Function* _llvm_function;
 
 };
 
@@ -66,7 +70,7 @@ private:
     std::string _id;
     AstList _args;
     Ast* _statement;
-    Type::TypeList _arg_types;
+    mutable Type::TypeList _arg_types;
 
 };
 
@@ -119,14 +123,16 @@ private:
 class Program : public Ast {
 public:
 
-    Program( const AstList& elements );
+    Program( int modifiers, const AstList& elements, const std::string& scope_name );
     virtual ~Program();
 
     ACCEPT( Program );
 
 private:
 
+    int _modifiers;
     AstList _elements;
+    std::string _scope_name;
 
 };
 

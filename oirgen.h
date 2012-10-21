@@ -22,6 +22,7 @@ public:
 
 private:
 
+    friend class DeclareOperator;
     IrGenOperator& operator=( const IrGenOperator& rhs ) { return *this; }
 
     llvm::Value* GenSwitch( llvm::Value* expr, llvm::Value* left, llvm::Value* right, Type type );
@@ -35,14 +36,14 @@ private:
     typedef std::vector< llvm::Value* > ValueList;
     typedef std::vector< llvm::Type* > LlvmTypeList;
 
+    std::string _namespace;
     llvm::Value* _value;
     llvm::Module* _module;
     llvm::IRBuilder<>& _builder;
     SymbolTable< llvm::Value* > _table;
 
-    bool _let_variables;
-
     Type _return_type;
+    bool _let_variables;
     llvm::Function::arg_iterator _arg_iterator;
     llvm::BasicBlock* _success_bb;
     llvm::BasicBlock* _fallthrough_bb;

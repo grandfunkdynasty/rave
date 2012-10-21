@@ -360,6 +360,8 @@ IMPLEMENT( TypeDef )
 
 IMPLEMENT( Program )
 {
+    if ( !arg._scope_name.empty() )
+        _result << arg._scope_name << " ";
     _result << "{\n";
     ++_indent;
     for ( std::size_t i = 0; i < arg._elements.size(); ++i ) {

@@ -12,8 +12,6 @@ StaticOperator::StaticOperator( int* errors )
 , _type( Type::Void() )
 , _return_type( Type::Void() )
 , _return_path( false )
-, _declare_globals( false )
-, _declarations( false )
 , _let_variables( false )
 , _let_type( Type::Void() )
 {
@@ -619,10 +617,6 @@ IMPLEMENT( Layer )
 
 IMPLEMENT( Argument )
 {
-    if ( _declarations ) {
-        _declaration_list.push_back( arg._type );
-        return;
-    }
     if ( !_table.AddEntry( arg._id, arg._type ) )
         Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
     _type = Type::Void();
@@ -630,19 +624,7 @@ IMPLEMENT( Argument )
 
 IMPLEMENT( FuncDef )
 {
-    if ( _declarations ) {
-        if ( _declare_globals && arg._modifiers & MODIFIER_LOCAL )
-            return;
-        _declaration_list.clear();
-        for ( std::size_t i = 0; i < arg._args.size(); ++i )
-            Operate( arg._args[ i ] );
-        if ( !_table.AddEntry( arg._id, Type::Function( arg._return_type, _declaration_list ) ) )
-            Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
-        arg._arg_types = _declaration_list;
-        return;
-    }
-
-    if ( arg._modifiers & MODIFIER_LOCAL && _table.Depth() == 0 )
+    if ( arg._modifiers & MODIFIER_LOCAL && !_table.Depth() )
         Error( arg, "`local' modifier illegal at global scope" );
     _table.Push();
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
@@ -658,21 +640,9 @@ IMPLEMENT( FuncDef )
 
 IMPLEMENT( SeqDef )
 {
-    if ( _declarations ) {
-        if ( _declare_globals && arg._modifiers & MODIFIER_LOCAL )
-            return;
-        _declaration_list.clear();
-        for ( std::size_t i = 0; i < arg._args.size(); ++i )
-            Operate( arg._args[ i ] );
-        if ( !_table.AddEntry( arg._id, Type::Sequence( _declaration_list ) ) )
-            Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
-        arg._arg_types = _declaration_list;
-        return;
-    }
-
     if ( arg._modifiers & MODIFIER_CACHE )
         Error( arg, "`cache' modifier illegal on sequence definitions" );
-    if ( arg._modifiers & MODIFIER_LOCAL && _table.Depth() == 0 )
+    if ( arg._modifiers & MODIFIER_LOCAL && !_table.Depth() )
         Error( arg, "`local' modifier illegal at global scope" );
     _table.Push();
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
@@ -684,14 +654,11 @@ IMPLEMENT( SeqDef )
 
 IMPLEMENT( VidDef )
 {
-    if ( _declarations )
-        return;
-
     if ( arg._modifiers & MODIFIER_CACHE )
         Error( arg, "`cache' modifier illegal on video definitions" );
     if ( arg._modifiers & MODIFIER_LOCAL )
         Error( arg, "`local' modifier illegal on video definitions" );
-    if ( !_table.AddEntry( "video::" + arg._id, Type::Sequence( Type::TypeList() ) ) )
+    if ( !_table.AddEntry( "video::" /*+ _namespace*/ + arg._id, Type::Sequence( Type::TypeList() ) ) )
         Error( arg, "video `" + arg._id + "' already declared in this scope" );
     Operate( arg._frame_count );
     if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )
@@ -708,33 +675,24 @@ IMPLEMENT( VidDef )
 
 IMPLEMENT( TypeDef )
 {
-    if ( _declarations )
-        return;
-
     if ( arg._modifiers & MODIFIER_CACHE )
         Error( arg, "`cache' modifier illegal on type definitions" );
-    if ( arg._modifiers & MODIFIER_LOCAL && _table.Depth() == 0 )
+    if ( arg._modifiers & MODIFIER_LOCAL && !_table.Depth() )
         Error( arg, "`local' modifier illegal at global scope" );
     _type = Type::Void();
 }
 
 IMPLEMENT( Program )
 {
-    if ( _declarations ) {
-        if ( _declare_globals )
-            return;
-        _declare_globals = true;
-        for ( std::size_t i = 0; i < arg._elements.size(); ++i )
-            Operate( arg._elements[ i ] );
-        _declare_globals = false;
-        return;
-    }
-
+    if ( arg._modifiers & MODIFIER_CACHE )
+        Error( arg, "`cache' modifier illegal on namespaces" );
+    if ( arg._modifiers & MODIFIER_LOCAL && !_table.Depth() )
+        Error( arg, "`local' modifier illegal at global scope" );
+    if ( arg._modifiers & MODIFIER_LOCAL && arg._scope_name.empty() )
+        Error( arg, "`local' modifier illegal on anonymous namespaces" );
     _table.Push();
-    _declarations = true;
-    for ( std::size_t i = 0; i < arg._elements.size(); ++i )
-        Operate( arg._elements[ i ] );
-    _declarations = false;
+    DeclareOperator odeclare( *this );
+    odeclare.Operate( &arg );
     for ( std::size_t i = 0; i < arg._elements.size(); ++i )
         Operate( arg._elements[ i ] );
     _table.Pop();

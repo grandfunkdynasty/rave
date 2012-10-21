@@ -373,7 +373,7 @@ Ast* construct( Node* node, bool helper )
         Ast::AstList list;
         for ( ; t; t = t->next )
             list.push_back( construct( t->elem ) );
-        return new Program( list );
+        return new Program( sub_type, list, node->string_data ? node->string_data : "" );
     }
 
     return 0;

@@ -62,9 +62,9 @@ int main( int argc, char** argv )
     oir.Operate( ast );
     delete ast;
 
-    std::cout << "ir code:\n";
+    /*std::cout << "ir code:\n";
     module->dump();
-    std::cout << "\n\n";
+    std::cout << "\n\n";*/
     std::cout << "verifying...";
     if ( llvm::verifyModule( *module ) )
         return 1;
@@ -98,7 +98,7 @@ int main( int argc, char** argv )
 
     void* jit_func = execution_engine->getPointerToFunction( &list.back() );
     struct ReturnType { rave_int a; rave_int b; };
-    ReturnType r = ( ( ReturnType (*)( rave_int ) )( intptr_t )jit_func )( 5 );
+    ReturnType r = ( ( ReturnType (*)( rave_int ) )( intptr_t )jit_func )( 42 );
     std::cout << "int value: " << r.a << ", " << r.b << "\n";
     delete module;
     return 0;

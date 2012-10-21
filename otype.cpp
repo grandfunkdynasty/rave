@@ -9,8 +9,6 @@
 
 TypeOperator::TypeOperator( int* errors )
 : _errors( errors )
-, _declare_globals( false )
-, _declarations( false )
 {
 }
 
@@ -37,7 +35,7 @@ Type TypeOperator::Resolve( const Ast& arg, const Type& type )
         return type;
     if ( type.Typedef() != "" && type.IsUnresolved() ) {
         if ( !_table.HasEntry( type.Typedef() ) ) {
-            Error( arg, "undeclared type '~" + type.Typedef() + "'" );
+            Error( arg, "undeclared type `~" + type.Typedef() + "'" );
             return Type::Typedef( type.Typedef(), Type::Void() );
         }
         return Type::Typedef( type.Typedef(), _table.GetEntry( type.Typedef() ) );
@@ -59,6 +57,7 @@ Type TypeOperator::Resolve( const Ast& arg, const Type& type )
 IMPLEMENT_EMPTY( ParseError );
 IMPLEMENT_EMPTY( Constant );
 IMPLEMENT_EMPTY( Identifier );
+IMPLEMENT_EMPTY( TypeDef );
 
 IMPLEMENT( TernaryOp )
 {
@@ -209,8 +208,6 @@ IMPLEMENT( Argument )
 
 IMPLEMENT( FuncDef )
 {
-    if ( _declarations )
-        return;
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
         Operate( arg._args[ i ] );
     Operate( arg._expr );
@@ -219,8 +216,6 @@ IMPLEMENT( FuncDef )
 
 IMPLEMENT( SeqDef )
 {
-    if ( _declarations )
-        return;
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
         Operate( arg._args[ i ] );
     Operate( arg._statement );
@@ -228,39 +223,15 @@ IMPLEMENT( SeqDef )
 
 IMPLEMENT( VidDef )
 {
-    if ( _declarations )
-        return;
     Operate( arg._frame_count );
     Operate( arg._statement );
 }
 
-IMPLEMENT( TypeDef )
-{
-    if ( !_declarations )
-        return;
-    if ( _declare_globals && arg._modifiers & MODIFIER_LOCAL )
-        return;
-    if ( !_table.AddEntry( arg._id, Resolve( arg, arg._type ) ) )
-        Error( arg, "type '~" + arg._id + "' already declared in this scope" );
-}
-
 IMPLEMENT( Program )
 {
-    if ( _declarations ) {
-        if ( _declare_globals )
-            return;
-        _declare_globals = true;
-        for ( std::size_t i = 0; i < arg._elements.size(); ++i )
-            Operate( arg._elements[ i ] );
-        _declare_globals = false;
-        return;
-    }
-
     _table.Push();
-    _declarations = true;
-    for ( std::size_t i = 0; i < arg._elements.size(); ++i )
-        Operate( arg._elements[ i ] );
-    _declarations = false;
+    DeclareOperator odeclare( *this );
+    odeclare.Operate( &arg );
     for ( std::size_t i = 0; i < arg._elements.size(); ++i )
         Operate( arg._elements[ i ] );
     _table.Pop();

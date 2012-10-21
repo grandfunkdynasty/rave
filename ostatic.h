@@ -16,6 +16,7 @@ public:
 
 private:
 
+    friend class DeclareOperator;
     void Error( const Ast& arg, const std::string& text );
     int* _errors;
 
@@ -24,11 +25,8 @@ private:
     Type _type;
     Type _return_type;
     bool _return_path;
-    bool _declare_globals;
-    bool _declarations;
     bool _let_variables;
     Type _let_type;
-    Type::TypeList _declaration_list;
     SymbolTable< Type > _table;
 
 };

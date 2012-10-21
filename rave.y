@@ -60,6 +60,7 @@ struct Node* error( const char* text )
 %token              T_BASE
 %token              T_MERGE
 %token              T_USE
+%token              T_NAMESPACE
 %token              T_TERNARY_OP_0
 %token <type>       T_TERNARY_OP_1
 %token <type>       T_BINARY_OP_0
@@ -107,10 +108,11 @@ struct Node* error( const char* text )
 * Types
 ***************************************************************/
 
+%type <string>      id_expr
 %type <integer>     modifier_list modifier layer_type
 %type <node>        type_args type_args_list type expr t_expr expr_list body body_list
 %type <node>        layer layer_optional_expr layer_optional_fx layer_list statement o_statement c_statement statement_list scope_def_list scope_def
-%type <node>        argument_def argument_list func_def seq_def vid_def type_def program_scope program
+%type <node>        argument_def argument_list func_def seq_def vid_def type_def program_scope sub_scope program
 %start program
 
 %%
@@ -143,24 +145,33 @@ type : T_INT                                                        { $$ = alloc
      | '(' type type_args_optional_id ',' type_args_list ')'        { $$ = $5;
                                                                       set_type( $$, NODE_TYPE, TYPE_TUPLE );
                                                                       push_front( $$, $2 ); }
-     | '~' T_ID                                                     { $$ = alloc_node( NODE_TYPE, TYPE_TYPEDEF );
+     | '~' id_expr                                                  { $$ = alloc_node( NODE_TYPE, TYPE_TYPEDEF );
                                                                       $$->string_data = $2; }
                                                                       
 /***************************************************************
 * Expressions
 ***************************************************************/
 
+id_expr : T_ID                                                      { $$ = $1; }
+        | id_expr T_NAMESPACE T_ID                                  { $$ = malloc( strlen( $1 ) + strlen( $3 ) + 2 );
+                                                                      strcpy( $$, $1 );
+                                                                      strcat( $$, "." );
+                                                                      strcat( $$, $3 );
+                                                                      free( $1 );
+                                                                      free( $3 ); }
+        ;
+
 expr : t_expr T_TERNARY_OP_0 expr ':' expr                          { $$ = alloc_node( NODE_TERNARY_OP, 0 );
                                                                       push_back( $$, $1 );
                                                                       push_back( $$, $3 );
                                                                       push_back( $$, $5 ); }
      | t_expr;
-                                                                      
+
 t_expr : T_INT_LITERAL                                              { $$ = alloc_node( NODE_LITERAL, LITERAL_INT );
                                                                       $$->int_data = $1; }
        | T_FLOAT_LITERAL                                            { $$ = alloc_node( NODE_LITERAL, LITERAL_FLOAT );
                                                                       $$->float_data = $1; }
-       | T_ID                                                       { $$ = alloc_node( NODE_IDENTIFIER, 0 );
+       | id_expr                                                    { $$ = alloc_node( NODE_IDENTIFIER, 0 );
                                                                       $$->string_data = $1; }
        | t_expr T_BINARY_OP_0 t_expr                                { $$ = alloc_binary_node( $2, $1, $3 ); }
        | t_expr T_BINARY_OP_1 t_expr                                { $$ = alloc_binary_node( $2, $1, $3 ); }
@@ -404,9 +415,16 @@ type_def : modifier_list type '~' T_ID ';'                          { $$ = alloc
 /***************************************************************
 * Program
 ***************************************************************/
+
+sub_scope : modifier_list T_ID '{' program_scope '}'                { $$ = $4;
+                                                                      $$->sub_type = $1;
+                                                                      $4->string_data = $2; }
+          | modifier_list '{' program_scope '}'                     { $$ = $3;
+                                                                      $3->string_data = 0;
+                                                                      $$->sub_type = $1; }
          
-program_scope : program_scope '{' program_scope '}'                 { $$ = $1;
-                                                                      push_back( $$, $3 ); }
+program_scope : program_scope sub_scope                             { $$ = $1;
+                                                                      push_back( $$, $2 ); }
               | program_scope func_def                              { $$ = $1;
                                                                       push_back( $$, $2 ); }
               | program_scope seq_def                               { $$ = $1;
@@ -715,8 +733,12 @@ type_def : modifier_list type error ';'                             { error( "ex
                                                                       push_back( $$, $2 ); }
          ;
          
-program_scope : program_scope '{' error '}'                         { error( "expected program" );
-                                                                      $$ = $1; }
-              ;
+sub_scope : modifier_list T_ID '{' error '}'                        { error( "expected namespace" );
+                                                                      $$ = alloc_node( NODE_PROGRAM, 0 );
+                                                                      $$->string_data = $2; }
+          | modifier_list '{' error '}'                             { error( "expected namespace" );
+                                                                      $$ = alloc_node( NODE_PROGRAM, 0 );
+                                                                      $$->string_data = 0; }
+          ;
 
 %%

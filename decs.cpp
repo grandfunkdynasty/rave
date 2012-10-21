@@ -25,6 +25,7 @@ FuncDef::FuncDef( int modifiers, Type return_type, const std::string& id,
 , _id( id )
 , _args( args )
 , _expr( expr )
+, _llvm_function( 0 )
 {
 }
 
@@ -93,8 +94,10 @@ TypeDef::~TypeDef()
 * Program
 ***************************************************************/
 
-Program::Program( const AstList& elements )
-: _elements( elements )
+Program::Program( int modifiers, const AstList& elements, const std::string& scope_name )
+: _modifiers( modifiers )
+, _elements( elements )
+, _scope_name( scope_name )
 {
 }
 
