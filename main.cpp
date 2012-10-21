@@ -74,9 +74,19 @@ int main( int argc, char** argv )
     optimiser.add( new llvm::TargetData( *execution_engine->getTargetData() ) );
     optimiser.add( llvm::createBasicAliasAnalysisPass() );
     optimiser.add( llvm::createInstructionCombiningPass() );
+    optimiser.add( llvm::createInstructionSimplifierPass() );
     optimiser.add( llvm::createReassociatePass() );
     optimiser.add( llvm::createGVNPass() );
     optimiser.add( llvm::createCFGSimplificationPass() );
+    optimiser.add( llvm::createSCCPPass() );
+    optimiser.add( llvm::createAggressiveDCEPass() );
+    optimiser.add( llvm::createIndVarSimplifyPass() );
+    optimiser.add( llvm::createLoopInstSimplifyPass() );
+    optimiser.add( llvm::createLoopStrengthReducePass() );
+    optimiser.add( llvm::createLoopUnswitchPass() );
+    optimiser.add( llvm::createBlockPlacementPass() );
+    optimiser.add( llvm::createTailCallEliminationPass() );
+    optimiser.add( llvm::createInstructionNamerPass() );
     optimiser.doInitialization();
     auto& list = module->getFunctionList();
     for ( auto i = list.begin(); i != list.end(); ++i )

@@ -40,6 +40,8 @@ private:
     llvm::IRBuilder<>& _builder;
     SymbolTable< llvm::Value* > _table;
 
+    bool _let_variables;
+
     Type _return_type;
     llvm::Function::arg_iterator _arg_iterator;
     llvm::BasicBlock* _success_bb;
