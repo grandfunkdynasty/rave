@@ -78,6 +78,7 @@
     <None Include="compile.bat" />
     <None Include="mandelbrot.rve" />
     <None Include="test.rve" />
+    <None Include="fibonacci.rve" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="generated\y.tab.h">

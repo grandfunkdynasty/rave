@@ -70,8 +70,12 @@ integer     {digit}+
 }
 
 <include>[^ \t\n\r]+ {
-    if ( include_depth >= MAX_INCLUDE_DEPTH )
-        yyserror( "includes nested too deeply" );
+    if ( include_depth >= MAX_INCLUDE_DEPTH ) {
+        char* buf = malloc( 128 + strlen( yytext ) );
+        sprintf( buf, "INCLUDE: file `%s' nested too deeply", yytext );
+        yyserror( buf );
+        free( buf );
+    }
     else {
         FILE* t = 0;
         struct IncludeList* list;
@@ -95,9 +99,10 @@ integer     {digit}+
 
         if ( dir == 0 || OPEN( t, local ) ) {
             if ( OPEN( t, yytext ) ) {
-                char buf[ 512 ];
-                sprintf( buf, "could not open included file '%s'", yytext );
+                char* buf = malloc( 128 + strlen( yytext ) );
+                sprintf( buf, "INCLUDE: could not open file `%s'", yytext );
                 yyserror( buf );
+                free( buf );
             }
             else
                 found = 2;

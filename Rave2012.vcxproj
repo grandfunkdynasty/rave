@@ -394,6 +394,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="fibonacci.rve" />
     <None Include="generated\y.output" />
     <None Include="rave.l" />
     <None Include="rave.y" />

@@ -1,0 +1,22 @@
+fibonacci {
+    local types {
+        (int n, int x_n, int x_n1) ~triple;
+    }
+    local int fast_helper(~types.triple t)
+    {
+        (n, x_n, x_n1) = t: {
+            n == 0: x_n1;
+            fast_helper((n - 1, x_n1, x_n + x_n1));
+        }
+    }
+    int fast(int n)
+    {
+        n <= 1: 1;
+        fast_helper((n - 1, 1, 1));
+    }
+    int slow(int n)
+    {
+        n <= 1: 1;
+        slow(n - 1) + slow(n - 2);
+    }
+}

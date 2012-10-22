@@ -16,6 +16,7 @@ struct Node* parse_tree;
 
 int yyserror( const char* text )
 {
+    write_error( yyname, yyline, yytext, text, 0 );
     return 0;
 }
 
