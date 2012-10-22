@@ -17,7 +17,7 @@
 
 int main( int argc, char** argv )
 {
-    if ( argc == 0 ) {
+    if ( argc <= 1 ) {
         std::cout << "no input file(s) specified\n";
         return 1;
     }

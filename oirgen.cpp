@@ -90,14 +90,12 @@ llvm::Constant* IrGenOperator::ConstantStruct( const Type::TypeList& tuple_args 
     for ( std::size_t i = 0; i < tuple_args.size(); ++i ) {
         if ( tuple_args[ i ] == Type::Bool() )
             values.push_back( ConstantBool( false ) );
-        else if ( tuple_args[ i ] == Type::Int() )
-            values.push_back( ConstantInt( 0 ) );
         else if ( tuple_args[ i ] == Type::Float() )
             values.push_back( ConstantFloat( 0.0 ) );
         else if ( tuple_args[ i ].IsTuple() )
             values.push_back( ConstantStruct( tuple_args[ i ].TypeArgs() ) );
         else
-            values.push_back( 0 ); // TODO ~ function & sequence defaults?
+            values.push_back( ConstantInt( 0 ) );
     }
     return llvm::ConstantStruct::get( ( llvm::StructType* )Type::Tuple( tuple_args ).LlvmType( _builder.getContext() ), values );
 }
@@ -185,20 +183,16 @@ IMPLEMENT( BinaryOp )
                 continue;
             }
             llvm::Value* vt = 0;
-            if ( t.IsFunction() || t.IsSequence() ) // TODO ~ right now just false
-                vt = ConstantBool( arg._type != BINARY_OP_EQ );
-            else {
-                auto lt = left;
-                auto rt = right;
-                for ( std::size_t i = 0; i < indices.size(); ++i ) {
-                    lt = _builder.CreateExtractValue( lt, indices[ i ], "cex" );
-                    rt = _builder.CreateExtractValue( rt, indices[ i ], "cex" );
-                }
-                if ( t == Type::Float() )
-                    vt = arg._type == BINARY_OP_EQ ? _builder.CreateFCmpOEQ( lt, rt, "feq" ) : _builder.CreateFCmpONE( lt, rt, "fne" );
-                else
-                    vt = arg._type == BINARY_OP_EQ ? _builder.CreateICmpEQ( lt, rt, "ieq" ) : _builder.CreateICmpNE( lt, rt, "ine" );
+            auto lt = left;
+            auto rt = right;
+            for ( std::size_t i = 0; i < indices.size(); ++i ) {
+                lt = _builder.CreateExtractValue( lt, indices[ i ], "cex" );
+                rt = _builder.CreateExtractValue( rt, indices[ i ], "cex" );
             }
+            if ( t == Type::Float() )
+                vt = arg._type == BINARY_OP_EQ ? _builder.CreateFCmpOEQ( lt, rt, "feq" ) : _builder.CreateFCmpONE( lt, rt, "fne" );
+            else
+                vt = arg._type == BINARY_OP_EQ ? _builder.CreateICmpEQ( lt, rt, "ieq" ) : _builder.CreateICmpNE( lt, rt, "ine" );
             _value = _value == 0 ? vt : arg._type == BINARY_OP_EQ ? _builder.CreateAnd( _value, vt, "ceq" ) : _builder.CreateOr( _value, vt, "cne" );
         }
     }
@@ -276,6 +270,7 @@ IMPLEMENT( UnaryOp )
 
 IMPLEMENT( TypeOp )
 {
+    // TODO
 }
 
 IMPLEMENT( TupleConstruct )

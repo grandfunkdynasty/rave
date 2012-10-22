@@ -468,9 +468,13 @@ llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
         args.push_back( _type_args[ i ].LlvmType( context ) );
     if ( _raw_type == TYPE_TUPLE )
         return llvm::StructType::get( context, args, false );
-    if ( _raw_type == TYPE_FUNCTION )
-        return llvm::FunctionType::get( _return_type.LlvmType( context ), args, false );
-    if ( _raw_type == TYPE_SEQUENCE )
-        return llvm::FunctionType::get( llvm::Type::getVoidTy( context ), args, false );
+    if ( _raw_type == TYPE_FUNCTION ) {
+        auto t = llvm::FunctionType::get( _return_type.LlvmType( context ), args, false );
+        return llvm::PointerType::get( t, 0 );
+    }
+    if ( _raw_type == TYPE_SEQUENCE ) {
+        auto t = llvm::FunctionType::get( llvm::Type::getVoidTy( context ), args, false );
+        return llvm::PointerType::get( t, 0 );
+    }
     return llvm::Type::getVoidTy( context );
 }

@@ -43,10 +43,10 @@ char* yyname = 0;
 ***************************************************************/
 
 ws          [ \t]+
-comment     \/\/.*\n
+nl          (\n)|(\r)|(\r\n)
+comment     \/\/.*({nl}|$)
 begin_lc    \/\*
 end_lc      \*\/
-nl          (\n)|(\r)|(\r\n)
 default     .|\n|\r
 
 letter      [A-Za-z_]
@@ -326,7 +326,7 @@ use {
     return T_BINARY_OP_10;
 }
 
-"//" {
+":=" {
     return T_REPLACE;
 }
 
