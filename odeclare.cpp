@@ -133,7 +133,7 @@ IMPLEMENT( TypeDef )
 {
     if ( _owner != DECLARE_TYPE || ( _declare_globals && arg._modifiers & MODIFIER_LOCAL ) )
         return;
-    if ( !_otype->_table.AddEntry( _namespace + arg._id, _otype->Resolve( arg, arg._type ) ) )
+    if ( !_otype->_table.AddEntry( _namespace + arg._id, _otype->Resolve( arg, arg._type, _namespace ) ) )
         _otype->Error( arg, "type `~" + arg._id + "' already declared in this scope" );
 }
 

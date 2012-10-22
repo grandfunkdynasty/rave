@@ -27,27 +27,27 @@ void TypeOperator::Error( const Ast& arg, const std::string& text )
     ++*_errors;
 }
 
-Type TypeOperator::Resolve( const Ast& arg, const Type& type )
+Type TypeOperator::Resolve( const Ast& arg, const Type& type, const std::string& scope_name )
 {
     if ( type == Type::Void() || type == Type::Bool() || type == Type::Int() || type == Type::Float() )
         return type;
     if ( type.Typedef() != "" && !type.IsUnresolved() )
         return type;
     if ( type.Typedef() != "" && type.IsUnresolved() ) {
-        if ( !_table.HasEntry( type.Typedef() ) ) {
+        if ( !_table.HasEntry( scope_name + type.Typedef() ) ) {
             Error( arg, "undeclared type `~" + type.Typedef() + "'" );
             return Type::Typedef( type.Typedef(), Type::Void() );
         }
-        return Type::Typedef( type.Typedef(), _table.GetEntry( type.Typedef() ) );
+        return Type::Typedef( type.Typedef(), _table.GetEntry( scope_name + type.Typedef() ) );
     }
     Type::TypeList list;
     for ( std::size_t i = 0; i < type.TypeArgs().size(); ++i )
-        list.push_back( Resolve( arg, type.TypeArgs()[ i ] ) );
+        list.push_back( Resolve( arg, type.TypeArgs()[ i ], scope_name ) );
     if ( type.IsTuple() )
         return Type::Tuple( list );
     if ( type.IsSequence() )
         return Type::Sequence( list );
-    return Type::Function( Resolve( arg, type.ReturnType() ), list );
+    return Type::Function( Resolve( arg, type.ReturnType(), scope_name ), list );
 }
 
 /***************************************************************
@@ -83,11 +83,11 @@ IMPLEMENT( TypeOp )
     if ( arg._left )
         Operate( arg._left );
     else
-        arg._left_type = Resolve( arg, arg._left_type );
+        arg._left_type = Resolve( arg, arg._left_type, "" );
     if ( arg._right )
         Operate( arg._right );
     else
-        arg._right_type = Resolve( arg, arg._right_type );
+        arg._right_type = Resolve( arg, arg._right_type, "" );
 }
 
 IMPLEMENT( TupleConstruct )
@@ -119,7 +119,7 @@ IMPLEMENT( FunctionCall )
 IMPLEMENT( Converter )
 {
     Operate( arg._expr );
-    arg._to = Resolve( arg, arg._to );
+    arg._to = Resolve( arg, arg._to, "" );
 }
 
 IMPLEMENT( Body )
@@ -203,7 +203,7 @@ IMPLEMENT( Layer )
 
 IMPLEMENT( Argument )
 {
-    arg._type = Resolve( arg, arg._type );
+    arg._type = Resolve( arg, arg._type, "" );
 }
 
 IMPLEMENT( FuncDef )
@@ -211,7 +211,7 @@ IMPLEMENT( FuncDef )
     for ( std::size_t i = 0; i < arg._args.size(); ++i )
         Operate( arg._args[ i ] );
     Operate( arg._expr );
-    arg._return_type = Resolve( arg, arg._return_type );
+    arg._return_type = Resolve( arg, arg._return_type, "" );
 }
 
 IMPLEMENT( SeqDef )

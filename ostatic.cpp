@@ -42,7 +42,7 @@ Ast* StaticOperator::Convert( Ast* expr, Type from, Type to )
     if ( from == Type::Void() || to == Type::Void() )
         return expr;
     if ( !from.ConvertsTo( to ) ) {
-        Error( *expr, "promotion: cannot convert `" + from.Typename() + "' to `" + to.Typename() + "'" );
+        Error( *expr, "conversion: cannot convert `" + from.Typename() + "' to `" + to.Typename() + "'" );
         return expr;
     }
     if ( from.Equivalent( to ) )

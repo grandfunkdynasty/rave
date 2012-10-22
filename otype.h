@@ -18,7 +18,7 @@ private:
     void Error( const Ast& arg, const std::string& text );
     int* _errors;
 
-    Type Resolve( const Ast& arg, const Type& type );
+    Type Resolve( const Ast& arg, const Type& type, const std::string& scope_name );
     SymbolTable< Type > _table;
 
 };

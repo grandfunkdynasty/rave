@@ -44,7 +44,7 @@ char* yyname = 0;
 
 ws          [ \t]+
 nl          (\n)|(\r)|(\r\n)
-comment     \/\/.*({nl}|$)
+comment     \/\/.*{nl}
 begin_lc    \/\*
 end_lc      \*\/
 default     .|\n|\r
