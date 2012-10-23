@@ -87,6 +87,11 @@ Type Type::Tuple( const TypeList& type_args )
     return *_type_set.insert( result ).first;
 }
 
+Type Type::Algebraic( const TypeMap& type_map )
+{
+    return Type::Void();
+}
+
 Type Type::Function( const Type& return_type, const TypeList& arg_types )
 {
     Internal result( Internal::TYPE_FUNCTION, return_type, arg_types );
@@ -270,6 +275,12 @@ std::size_t Type::Hash::operator()( const Internal& type ) const
         boost::hash_combine( t, type.TypeArgs()[ i ]._typename );
     }
     return t;
+}
+
+Type::Type()
+: _type( Type::Void()._type )
+, _typename( Type::Void()._typename )
+{
 }
 
 Type::Type( const Internal& type )

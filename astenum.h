@@ -11,6 +11,7 @@ enum NodeType {
 
     // Types
     NODE_TYPE,
+    NODE_ALGEBRAIC,
 
     // Expressions
     NODE_LITERAL,
@@ -94,6 +95,7 @@ enum NodeSubType {
     TYPE_INT = 1,
     TYPE_FLOAT,
     TYPE_TUPLE,
+    TYPE_ALGEBRAIC,
     TYPE_FUNCTION,
     TYPE_SEQUENCE,
     TYPE_TYPEDEF,

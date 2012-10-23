@@ -159,6 +159,13 @@ Type construct_type( Node* node )
         return Type::Tuple( list );
     }
 
+    if ( node->sub_type == TYPE_ALGEBRAIC ) {
+        Type::TypeMap map;
+        for ( NodeList* t = node->begin; t; t = t->next )
+            map[ std::string( t->elem->string_data ) ] = construct_type( t->elem->begin->elem );
+        return Type::Algebraic( map );
+    }
+
     Type::TypeList list;
     auto t = node->begin;
     for ( t = node->sub_type == TYPE_FUNCTION ? t->next : t; t; t = t->next )

@@ -111,7 +111,7 @@ struct Node* error( const char* text )
 
 %type <string>      id_expr
 %type <integer>     modifier_list modifier layer_type
-%type <node>        type_args type_args_list type expr t_expr expr_list body body_list
+%type <node>        type_args type_args_list algebraic_list algebraic_constructor type expr t_expr expr_list body body_list
 %type <node>        layer layer_optional_expr layer_optional_fx layer_list statement o_statement c_statement statement_list scope_def_list scope_def
 %type <node>        argument_def argument_list func_def seq_def vid_def type_def program_scope sub_scope program
 %start program
@@ -135,6 +135,19 @@ type_args_list : type type_args_optional_id                         { $$ = alloc
 type_args_optional_id : T_ID
                       |
                       ;
+
+algebraic_constructor : T_ID type                                   { $$ = alloc_node( NODE_ALGEBRAIC, 0 );
+                                                                      $$->string_data = $1;
+                                                                      push_back( $$, $2 ); }
+                      | T_ID                                        { $$ = alloc_node( NODE_ALGEBRAIC, 0 );
+                                                                      $$->string_data = $1; }
+                      ;
+
+algebraic_list : algebraic_list '|' algebraic_constructor           { $$ = $1;
+                                                                      push_back( $$, $3 ); }
+               | algebraic_constructor                              { $$ = alloc_node( NODE_UNDEFINED, 0 );
+                                                                      push_back( $$, $1 ); }
+               ;
                       
 type : T_INT                                                        { $$ = alloc_node( NODE_TYPE, TYPE_INT ); }
      | T_FLOAT                                                      { $$ = alloc_node( NODE_TYPE, TYPE_FLOAT ); }
@@ -146,8 +159,12 @@ type : T_INT                                                        { $$ = alloc
      | '(' type type_args_optional_id ',' type_args_list ')'        { $$ = $5;
                                                                       set_type( $$, NODE_TYPE, TYPE_TUPLE );
                                                                       push_front( $$, $2 ); }
+     | '<' algebraic_list '|' algebraic_constructor '>'             { $$ = $2;
+                                                                      set_type( $$, NODE_TYPE, TYPE_ALGEBRAIC );
+                                                                      push_back( $$, $4 ); }
      | '~' id_expr                                                  { $$ = alloc_node( NODE_TYPE, TYPE_TYPEDEF );
                                                                       $$->string_data = $2; }
+     ;
                                                                       
 /***************************************************************
 * Expressions

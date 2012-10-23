@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <boost/tr1/unordered_set.hpp>
+#include <map>
 
 /***************************************************************
 * Raw primitive types
@@ -24,12 +25,14 @@ class Type {
 public:
 
     typedef std::vector< Type > TypeList;
+    typedef std::map< std::string, Type > TypeMap;
 
     static Type Void();
     static Type Bool();
     static Type Int();
     static Type Float();
     static Type Tuple( const TypeList& type_args );
+    static Type Algebraic( const TypeMap& type_map );
     static Type Function( const Type& return_type, const TypeList& arg_types );
     static Type Sequence( const TypeList& arg_types );
     static Type Typedef( const std::string& name );
@@ -72,6 +75,8 @@ private:
 
     std::string _typename;
     const Internal* _type;
+    friend class TypeMap;
+    Type();
     Type( const Internal& type );
     Type( const std::string& name );
     Type( const std::string& name, const Internal& type );
