@@ -62,6 +62,9 @@ struct Node* error( const char* text )
 %token              T_MERGE
 %token              T_USE
 %token              T_NAMESPACE
+%token <type>       T_LBRACKET
+%token <type>       T_RBRACKET
+%token <type>       T_PIPE
 %token              T_TERNARY_OP_0
 %token <type>       T_TERNARY_OP_1
 %token <type>       T_BINARY_OP_0
@@ -87,23 +90,24 @@ struct Node* error( const char* text )
 * Precedence
 ***************************************************************/
 
-%left               T_TERNARY_OP_0              /* ?: */
-%left               T_BINARY_OP_0               /* || */
-%left               T_BINARY_OP_1               /* && */
-%left               T_BINARY_OP_2               /* == != */
-%left               T_TYPE_OP                   /* <~ <~> ~> */
-%left               T_BINARY_OP_3               /* < > <= >= */
-%left               T_BINARY_OP_4               /* | */
-%left               T_BINARY_OP_5               /* ' */
-%left               T_BINARY_OP_6               /* & */
-%left               T_BINARY_OP_7               /* << >> */
-%left               T_BINARY_OP_8 '+' '-'       /* + - */
-%left               T_BINARY_OP_9 '/' '*' '%'   /* * / % */
-%right              T_UNARY_OP                  /* - ! \ */
-%right              T_BINARY_OP_10              /* ^ */
-%right              T_BINARY_OP_11 '['          /* [] */
-%right              T_TERNARY_OP_1              /* [=] */
-%left               T_FUNCTION_OP '('           /* () */
+%left               T_TERNARY_OP_0                      /* ?: */
+%left               T_BINARY_OP_0                       /* || */
+%left               T_BINARY_OP_1                       /* && */
+%left               T_BINARY_OP_2                       /* == != */
+%left               T_TYPE_OP                           /* <~ <~> ~> */
+%left               T_BINARY_OP_3 T_LBRACKET T_RBRACKET /* < > <= >= */
+%left               T_BINARY_OP_4 T_PIPE                /* | */
+%left               T_BINARY_OP_5                       /* ' */
+%left               T_BINARY_OP_6                       /* & */
+%left               T_BINARY_OP_7                       /* << >> */
+%left               T_BINARY_OP_8 '+' '-'               /* + - */
+%left               T_BINARY_OP_9 '/' '*' '%'           /* * / % */
+%right              T_UNARY_OP                          /* - ! \ */
+%right              T_BINARY_OP_10                      /* ^ */
+%right              T_BINARY_OP_11 '['                  /* [] */
+%right              T_TERNARY_OP_1                      /* [=] */
+%left               T_FUNCTION_OP '('                   /* () */
+%left               T_APPLY_OP
 
 /***************************************************************
 * Types
@@ -143,7 +147,7 @@ algebraic_constructor : T_ID type                                   { $$ = alloc
                                                                       $$->string_data = $1; }
                       ;
 
-algebraic_list : algebraic_list '|' algebraic_constructor           { $$ = $1;
+algebraic_list : algebraic_list T_PIPE algebraic_constructor        { $$ = $1;
                                                                       push_back( $$, $3 ); }
                | algebraic_constructor                              { $$ = alloc_node( NODE_UNDEFINED, 0 );
                                                                       push_back( $$, $1 ); }
@@ -159,7 +163,8 @@ type : T_INT                                                        { $$ = alloc
      | '(' type type_args_optional_id ',' type_args_list ')'        { $$ = $5;
                                                                       set_type( $$, NODE_TYPE, TYPE_TUPLE );
                                                                       push_front( $$, $2 ); }
-     | '<' algebraic_list '|' algebraic_constructor '>'             { $$ = $2;
+     | T_LBRACKET algebraic_list T_PIPE
+       algebraic_constructor T_RBRACKET                             { $$ = $2;
                                                                       set_type( $$, NODE_TYPE, TYPE_ALGEBRAIC );
                                                                       push_back( $$, $4 ); }
      | '~' id_expr                                                  { $$ = alloc_node( NODE_TYPE, TYPE_TYPEDEF );
@@ -199,6 +204,9 @@ t_expr : T_INT_LITERAL                                              { $$ = alloc
        | t_expr T_BINARY_OP_5 t_expr                                { $$ = alloc_binary_node( $2, $1, $3 ); }
        | t_expr T_BINARY_OP_6 t_expr                                { $$ = alloc_binary_node( $2, $1, $3 ); }
        | t_expr T_BINARY_OP_7 t_expr                                { $$ = alloc_binary_node( $2, $1, $3 ); }
+       | t_expr T_LBRACKET t_expr                                   { $$ = alloc_binary_node( $2, $1, $3 ); }
+       | t_expr T_RBRACKET t_expr                                   { $$ = alloc_binary_node( $2, $1, $3 ); }
+       | t_expr T_PIPE t_expr                                       { $$ = alloc_binary_node( $2, $1, $3 ); }
        | t_expr '+' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_ADD, $1, $3 ); }
        | t_expr '-' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_SUB, $1, $3 ); }
        | t_expr '/' t_expr                                          { $$ = alloc_binary_node( BINARY_OP_DIV, $1, $3 ); }

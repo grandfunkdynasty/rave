@@ -3,3 +3,5 @@ INCLUDE fibonacci.rve
 (int, int) test1(int n) (n, (1 ? fibonacci.fast : fibonacci.slow)(n));
 int test_help(int n, int function(int) f) f(n);
 (int, int) test2(int n) (n, test_help(n, fibonacci.fast));
+
+<list (int, ~list) | tail> ~list;

@@ -330,7 +330,7 @@ IMPLEMENT( TupleReplace )
 
     bool fail = false;
     if ( !tuple.IsTuple() ) {
-        Error( arg, "cannot apply `[//]' to `" + tuple.Typename() + "'" );
+        Error( arg, "cannot apply `[:=]' to `" + tuple.Typename() + "'" );
         fail = true;
     }
     SubtreeConstraintOperator oconstraint;

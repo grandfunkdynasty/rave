@@ -53,10 +53,12 @@ public:
     bool IsUnresolved() const;
     const std::string& Typedef() const;
     bool IsTuple() const;
+    bool IsAlgebraic() const;
     bool IsFunction() const;
     bool IsSequence() const;
     const Type& ReturnType() const;
     const TypeList& TypeArgs() const;
+    const TypeMap& TypeArgsMap() const;
 
     llvm::Type* LlvmType( llvm::LLVMContext& context ) const;
 

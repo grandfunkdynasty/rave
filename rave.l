@@ -283,7 +283,7 @@ use {
 
 ">" {
     yylval.type = BINARY_OP_GT;
-    return T_BINARY_OP_3;
+    return T_RBRACKET;
 }
 
 ">=" {
@@ -293,7 +293,7 @@ use {
 
 "<" {
     yylval.type = BINARY_OP_LT;
-    return T_BINARY_OP_3;
+    return T_LBRACKET;
 }
 
 "<=" {
@@ -303,7 +303,7 @@ use {
 
 "|" {
     yylval.type = BINARY_OP_BIT_OR;
-    return T_BINARY_OP_4;
+    return T_PIPE;
 }
 
 "'" {

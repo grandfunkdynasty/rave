@@ -40,6 +40,12 @@ Type TypeOperator::Resolve( const Ast& arg, const Type& type, const std::string&
         }
         return Type::Typedef( type.Typedef(), _table.GetEntry( scope_name + type.Typedef() ) );
     }
+    if ( type.IsAlgebraic() ) {
+        Type::TypeMap map;
+        for ( auto i = type.TypeArgsMap().begin(); i != type.TypeArgsMap().end(); ++i )
+            map[ i->first ] = Resolve( arg, i->second, scope_name );
+        return Type::Algebraic( map );
+    }
     Type::TypeList list;
     for ( std::size_t i = 0; i < type.TypeArgs().size(); ++i )
         list.push_back( Resolve( arg, type.TypeArgs()[ i ], scope_name ) );
@@ -47,7 +53,9 @@ Type TypeOperator::Resolve( const Ast& arg, const Type& type, const std::string&
         return Type::Tuple( list );
     if ( type.IsSequence() )
         return Type::Sequence( list );
-    return Type::Function( Resolve( arg, type.ReturnType(), scope_name ), list );
+    if ( type.IsFunction() )
+        return Type::Function( Resolve( arg, type.ReturnType(), scope_name ), list );
+    return Type::Void();
 }
 
 /***************************************************************

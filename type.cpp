@@ -20,11 +20,13 @@ public:
         TYPE_INT,
         TYPE_FLOAT,
         TYPE_TUPLE,
+        TYPE_ALGEBRAIC,
         TYPE_FUNCTION,
         TYPE_SEQUENCE
     };
 
     Internal( int raw_type, Type return_type, const Type::TypeList& type_args );
+    Internal( int raw_type, const Type::TypeMap& type_map );
 
     Internal( const Internal& type );
     const Internal& operator=( const Internal& type );
@@ -39,6 +41,7 @@ public:
     int RawType() const;
     const Type& ReturnType() const;
     const Type::TypeList& TypeArgs() const;
+    const Type::TypeMap& TypeArgsMap() const;
     llvm::Type* LlvmType( llvm::LLVMContext& context ) const;
 
 private:
@@ -46,6 +49,7 @@ private:
     int _raw_type;
     Type _return_type;
     Type::TypeList _type_args;
+    Type::TypeMap _type_map;
 
 };
 
@@ -89,7 +93,8 @@ Type Type::Tuple( const TypeList& type_args )
 
 Type Type::Algebraic( const TypeMap& type_map )
 {
-    return Type::Void();
+    Internal result( Internal::TYPE_ALGEBRAIC, type_map );
+    return *_type_set.insert( result ).first;
 }
 
 Type Type::Function( const Type& return_type, const TypeList& arg_types )
@@ -192,6 +197,13 @@ bool Type::IsTuple() const
     return _type->RawType() == Internal::TYPE_TUPLE;
 }
 
+bool Type::IsAlgebraic() const
+{
+    if ( !_type )
+        return false;
+    return _type->RawType() == Internal::TYPE_ALGEBRAIC;
+}
+
 bool Type::IsFunction() const
 {
     if ( !_type )
@@ -216,6 +228,11 @@ const Type::TypeList& Type::TypeArgs() const
     return _type->TypeArgs();
 }
 
+const Type::TypeMap& Type::TypeArgsMap() const
+{
+    return _type->TypeArgsMap();
+}
+
 llvm::Type* Type::LlvmType( llvm::LLVMContext& context ) const
 {
     return _type->LlvmType( context );
@@ -232,20 +249,35 @@ Internal::Internal( int raw_type, Type return_type, const Type::TypeList& type_a
 {
 }
 
+Internal::Internal( int raw_type, const Type::TypeMap& type_map )
+: _raw_type( raw_type )
+, _return_type( Type::Void() )
+, _type_map( type_map )
+{
+}
+
 Internal::Internal( const Internal& type )
 : _raw_type( type._raw_type )
 , _return_type( type._return_type )
 , _type_args( type._type_args )
+, _type_map( type._type_map )
 {
 }
 
 bool Internal::operator==( const Internal& type ) const
 {
     if ( _raw_type != type._raw_type || _return_type != type._return_type ||
-         _type_args.size() != type._type_args.size() )
+         _type_args.size() != type._type_args.size() ||
+         _type_map.size() != type._type_map.size() )
         return false;
     for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
         if ( _type_args[ i ] != type._type_args[ i ] )
+            return false;
+    }
+    auto i = _type_map.begin();
+    auto j = type._type_map.begin();
+    for ( ; i != _type_map.end() && j != type._type_map.end(); ++i, ++j ) {
+        if ( i->first != j->first || i->second != j->second )
             return false;
     }
     return true;
@@ -261,6 +293,7 @@ const Internal& Internal::operator=( const Internal& type )
     _raw_type = type._raw_type;
     _return_type = type._return_type;
     _type_args = type._type_args;
+    _type_map = type._type_map;
     return *this;
 }
 
@@ -273,6 +306,12 @@ std::size_t Type::Hash::operator()( const Internal& type ) const
     for ( std::size_t i = 0; i < type.TypeArgs().size(); ++i ) {
         boost::hash_combine( t, type.TypeArgs()[ i ]._type );
         boost::hash_combine( t, type.TypeArgs()[ i ]._typename );
+    }
+    auto i = type.TypeArgsMap().begin();
+    for ( ; i != type.TypeArgsMap().end(); ++i ) {
+        boost::hash_combine( t, i->first );
+        boost::hash_combine( t, i->second._type );
+        boost::hash_combine( t, i->second._typename );
     }
     return t;
 }
@@ -322,6 +361,18 @@ bool Internal::Equivalent( const Internal& type ) const
         return true;
     }
 
+    if ( _raw_type == TYPE_ALGEBRAIC ) {
+        if ( _type_map.size() != type._type_map.size() )
+            return false;
+        auto i = _type_map.begin();
+        auto j = type._type_map.begin();
+        for ( ; i != _type_map.end() && j != type._type_map.end(); ++i, ++j ) {
+            if ( i->first != j->first || !i->second.Equivalent( j->second ) )
+                return false;
+        }
+        return true;
+    }
+
     if ( _raw_type == TYPE_FUNCTION && !_return_type.Equivalent( type._return_type ) )
         return false;
     if ( _type_args.size() != type._type_args.size() )
@@ -339,9 +390,8 @@ bool Internal::Equivalent( const Internal& type ) const
 
 bool Internal::ConvertsTo( const Internal& type ) const
 {
-    if ( _raw_type == TYPE_VOID || type._raw_type == TYPE_VOID )
-        return false;
-
+    if ( _raw_type == TYPE_VOID )
+        return type._raw_type == TYPE_VOID;
     if ( _raw_type == TYPE_INT || _raw_type == TYPE_BOOL )
         return type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT || type._raw_type == TYPE_BOOL;
     if ( _raw_type == TYPE_FLOAT )
@@ -352,6 +402,18 @@ bool Internal::ConvertsTo( const Internal& type ) const
             return false;
         for ( std::size_t i = 0; i < _type_args.size(); ++i ) {
             if ( !_type_args[ i ].ConvertsTo( type._type_args[ i ] ) )
+                return false;
+        }
+        return true;
+    }
+
+    if ( _raw_type == TYPE_TUPLE ) {
+        if ( type._raw_type != TYPE_TUPLE || _type_map.size() != type._type_map.size() )
+            return false;
+        auto i = _type_map.begin();
+        auto j = type._type_map.begin();
+        for ( ; i != _type_map.end() && j != type._type_map.end(); ++i, ++j ) {
+            if ( i->first != j->first || !i->second.ConvertsTo( j->second ) )
                 return false;
         }
         return true;
@@ -404,6 +466,23 @@ Type Internal::Generalise( const Internal& type ) const
         return Type::Tuple( type_args );
     }
 
+    if ( _raw_type == TYPE_ALGEBRAIC ) {
+        if ( _type_map.size() != type._type_map.size() )
+            return Type::Void();
+        Type::TypeMap type_map;
+        auto i = _type_map.begin();
+        auto j = type._type_map.begin();
+        for ( ; i != _type_map.end() && j != type._type_map.end(); ++i, ++j ) {
+            if ( i->first != j->first )
+                return Type::Void();
+            Type t = i->second.Generalise( j->second );
+            if ( t == Type::Void() && !( i->second == Type::Void() && j->second == Type::Void() ) )
+                return Type::Void();
+            type_map[ i->first ] = t;
+        }
+        return Type::Algebraic( type_map );
+    }
+
     if ( _raw_type != type._raw_type )
         return Type::Void();
     Type::TypeList arg_types;
@@ -433,6 +512,17 @@ std::string Internal::Typename() const
         return "int";
     if ( _raw_type == TYPE_FLOAT )
         return "float";
+    if ( _raw_type == TYPE_ALGEBRAIC ) {
+        bool first = true;
+        std::string s = "<";
+        for ( auto i = _type_map.begin(); i != _type_map.end(); ++i ) {
+            if ( !first )
+                s += " | ";
+            s += i->first + " " + i->second.Typename();
+            first = false;
+        }
+        return s + ">";
+    }
 
     std::string s = _raw_type == TYPE_FUNCTION ? _return_type.Typename() + " function" :
                     _raw_type == TYPE_SEQUENCE ? "sequence" : "";
@@ -463,6 +553,11 @@ const Type::TypeList& Internal::TypeArgs() const
     return _type_args;
 }
 
+const Type::TypeMap& Internal::TypeArgsMap() const
+{
+    return _type_map;
+}
+
 llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
 {
     if ( _raw_type == TYPE_VOID )
@@ -487,5 +582,6 @@ llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
         auto t = llvm::FunctionType::get( llvm::Type::getVoidTy( context ), args, false );
         return llvm::PointerType::get( t, 0 );
     }
+    // TODO ~ TYPE_ALGEBRAIC
     return llvm::Type::getVoidTy( context );
 }
