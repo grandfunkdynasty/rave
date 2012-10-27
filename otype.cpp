@@ -238,8 +238,10 @@ IMPLEMENT( VidDef )
 IMPLEMENT( Program )
 {
     _table.Push();
-    DeclareOperator odeclare( *this );
+    DeclareOperator odeclare( *this, false );
     odeclare.Operate( &arg );
+    DeclareOperator oresolve( *this, true );
+    oresolve.Operate( &arg );
     for ( std::size_t i = 0; i < arg._elements.size(); ++i )
         Operate( arg._elements[ i ] );
     _table.Pop();

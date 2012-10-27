@@ -23,6 +23,7 @@ public:
     bool AddEntry( const std::string& id, const T& t );
     bool HasEntry( const std::string& id ) const;
     const T& GetEntry( const std::string& id ) const;
+    T& GetEntry( const std::string& id );
 
 /***************************************************************
 * Internals
@@ -97,6 +98,20 @@ const T& SymbolTable< T >::GetEntry( const std::string& id ) const
 {
     for ( std::size_t i = Depth(); ; --i ) {
         const auto& scope = _entry_stack[ i ];
+        auto it = scope.find( id );
+        if ( it != scope.end() )
+            return it->second;
+        if ( !i )
+            break;
+    }
+    return _void;
+}
+
+template< typename T >
+T& SymbolTable< T >::GetEntry( const std::string& id )
+{
+    for ( std::size_t i = Depth(); ; --i ) {
+        auto& scope = _entry_stack[ i ];
         auto it = scope.find( id );
         if ( it != scope.end() )
             return it->second;

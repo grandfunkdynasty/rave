@@ -48,6 +48,9 @@ private:
     llvm::BasicBlock* _success_bb;
     llvm::BasicBlock* _fallthrough_bb;
 
+    typedef std::vector< std::pair< Type, std::vector< llvm::Function* > > > AlgebraicConstructorList;
+    AlgebraicConstructorList _algebraic_constructor_list;
+
 };
 
 #endif

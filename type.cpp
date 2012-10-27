@@ -518,7 +518,9 @@ std::string Internal::Typename() const
         for ( auto i = _type_map.begin(); i != _type_map.end(); ++i ) {
             if ( !first )
                 s += " | ";
-            s += i->first + " " + i->second.Typename();
+            s += i->first;
+            if ( i->second != Type::Void() )
+                s += " " + i->second.Typename();
             first = false;
         }
         return s + ">";
@@ -568,8 +570,18 @@ llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
         return llvm::Type::getInt32Ty( context );
     if ( _raw_type == TYPE_FLOAT )
         return llvm::Type::getDoubleTy( context );
-
+    
     std::vector< llvm::Type* > args;
+    if ( _raw_type == TYPE_ALGEBRAIC ) {
+        args.push_back( llvm::Type::getInt32Ty( context ) );
+        auto i = _type_map.begin();
+        for ( ; i != _type_map.end(); ++i ) {
+            if ( i->second != Type::Void() )
+                args.push_back( i->second.LlvmType( context ) );
+        }
+        return llvm::StructType::get( context, args, false );
+    }
+
     for ( std::size_t i = 0; i < _type_args.size(); ++i )
         args.push_back( _type_args[ i ].LlvmType( context ) );
     if ( _raw_type == TYPE_TUPLE )
@@ -582,6 +594,5 @@ llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
         auto t = llvm::FunctionType::get( llvm::Type::getVoidTy( context ), args, false );
         return llvm::PointerType::get( t, 0 );
     }
-    // TODO ~ TYPE_ALGEBRAIC
     return llvm::Type::getVoidTy( context );
 }
