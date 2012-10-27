@@ -13,6 +13,7 @@ StaticOperator::StaticOperator( int* errors )
 , _return_type( Type::Void() )
 , _return_path( false )
 , _let_variables( false )
+, _let_guard( false )
 , _let_type( Type::Void() )
 {
 }
@@ -69,6 +70,8 @@ IMPLEMENT( Identifier )
     if ( _let_variables ) {
         if ( !_table.AddEntry( arg._id, _let_type ) )
             Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
+        if ( arg._id.find( "." ) != std::string::npos )
+            Error( arg, "scoped variable names are illegal" );
         return;
     }
     if ( !_table.HasEntry( arg._id ) )
@@ -294,7 +297,7 @@ IMPLEMENT( TupleExtract )
         Error( arg, "cannot apply `[]' to `" + _type.Typename() + "'" );
         fail = true;
     }
-    SubtreeConstraintOperator oconstraint;
+    SubtreeConstraintOperator oconstraint( _table );
     oconstraint.Operate( arg._index );
     if ( !oconstraint.ConstantInt() ) {
         Error( arg, "tuple-extract: index must be constant int" );
@@ -333,7 +336,7 @@ IMPLEMENT( TupleReplace )
         Error( arg, "cannot apply `[:=]' to `" + tuple.Typename() + "'" );
         fail = true;
     }
-    SubtreeConstraintOperator oconstraint;
+    SubtreeConstraintOperator oconstraint( _table );
     oconstraint.Operate( arg._index );
     if ( !oconstraint.ConstantInt() ) {
         Error( arg, "tuple-replace: index must be constant int" );
@@ -360,6 +363,35 @@ IMPLEMENT( TupleReplace )
 
 IMPLEMENT( FunctionCall )
 {
+    if ( _let_variables ) {
+        _let_guard = true;
+        SubtreeConstraintOperator oconstraint( _table );
+        oconstraint.Operate( arg._function );
+        const std::string& identifier = oconstraint.SingleIdentifierName();
+        if ( !oconstraint.SingleIdentifier() )
+            Error( arg, "let variables: constructor must be an identifier" );
+        else if ( !_table.HasEntry( identifier ) )
+            Error( arg, "let variables: undeclared identifier `" + identifier + "'" );
+        else if ( !_table.HasEntry( "constructor:" + identifier ) )
+            Error( arg, "let variables: `" + identifier + "' is not a constructor" );
+        else {
+            const Type& constructor = _table.GetEntry( identifier );
+            Type t = _let_type;
+            if ( !t.Equivalent( constructor.ReturnType() ) ) // TODO ~ ConvertsTo, maybe? (need some conversion somewhere)
+                Error( arg, "let variables: cannot convert `" + t.Typename() + "' to `" + constructor.ReturnType().Typename() );
+            if ( arg._args.size() < constructor.TypeArgs().size() )
+                Error( arg, "let variables: too few arguments for constructor `" + identifier + "'" );
+            else if ( arg._args.size() > constructor.TypeArgs().size() )
+                Error( arg, "let variables: too many arguments for constructor `" + identifier + "'" );
+            for ( std::size_t i = 0; i < arg._args.size() && i < constructor.TypeArgs().size(); ++i ) {
+                _let_type = constructor.TypeArgs()[ i ];
+                Operate( arg._args[ i ] );
+            }
+            _let_type = t;
+        }
+        return;
+    }
+
     Operate( arg._function );
     Type function = _type;
     Type::TypeList list;
@@ -465,20 +497,24 @@ IMPLEMENT( Let )
     Operate( arg._expr );
 
     _table.Push();
-    SubtreeConstraintOperator oconstraint;
+    SubtreeConstraintOperator oconstraint( _table );
     oconstraint.Operate( arg._ids );
-    if ( !oconstraint.AllIdentifiers() )
-        Error( arg, "let variables: must be identifiers" );
+    bool let_guard = false;
+    if ( !oconstraint.ValidLetVariables() )
+        Error( *arg._ids, "let variables: only identifiers, tuples and constructors are legal" );
     else {
         _let_variables = true;
+        _let_guard = false;
         _let_type = _type;
         Operate( arg._ids );
         _let_variables = false;
+        let_guard = _let_guard;
+        _let_guard = false;
     }
     Operate( arg._in );
     _table.Pop();
     _type = Type::Void();
-    _return_path = b || _return_path;
+    _return_path = b || ( _return_path && !let_guard );
 }
 
 IMPLEMENT( Block )
@@ -510,21 +546,21 @@ IMPLEMENT( Loop )
     Operate( arg._end );
     Type end = _type;
     if ( !begin.ConvertsTo( Type::Int() ) && begin != Type::Void() )
-        Error( arg, "loop index: cannot convert `" + begin.Typename() +
+        Error( *arg._begin, "loop index: cannot convert `" + begin.Typename() +
                "' to `" + Type::Int().Typename() + "'" );
     else
         arg._begin = Convert( arg._begin, _type, Type::Int() );
     if ( !end.ConvertsTo( Type::Int() ) && end != Type::Void() )
-        Error( arg, "loop index: cannot convert `" + end.Typename() +
+        Error( *arg._end, "loop index: cannot convert `" + end.Typename() +
                "' to `" + Type::Int().Typename() + "'" );
     else
         arg._end = Convert( arg._end, _type, Type::Int() );
 
     _table.Push();
-    SubtreeConstraintOperator oconstraint;
+    SubtreeConstraintOperator oconstraint( _table );
     oconstraint.Operate( arg._id );
-    if ( !oconstraint.AllIdentifiers() || oconstraint.Nested() )
-        Error( arg, "loop variable: must be identifier" );
+    if ( !oconstraint.SingleIdentifier() )
+        Error( *arg._id, "loop variable: must be identifier" );
     else {
         _let_variables = true;
         _let_type = Type::Int();

@@ -26,6 +26,7 @@ private:
     Type _return_type;
     bool _return_path;
     bool _let_variables;
+    bool _let_guard;
     Type _let_type;
     SymbolTable< Type > _table;
 

@@ -7,19 +7,24 @@
 class SubtreeConstraintOperator : public ConstOperator {
 public:
 
-    SubtreeConstraintOperator();
+    SubtreeConstraintOperator( const SymbolTable< Type >& table );
     virtual ~SubtreeConstraintOperator();
 
     CONST_OPERATOR;
-    bool Nested() const;
-    bool AllIdentifiers() const;
+    bool SingleIdentifier() const;
+    const std::string& SingleIdentifierName() const;
+    bool ValidLetVariables() const;
     bool ConstantInt() const;
     rave_int ConstantIntValue() const;
 
 private:
 
-    bool _nested;
-    bool _all_identifiers;
+    SubtreeConstraintOperator& operator=( const SubtreeConstraintOperator& o );
+
+    const SymbolTable< Type >& _table;
+    bool _single_identifier;
+    std::string _single_identifier_name;
+    bool _valid_let_variables;
     bool _constant_int;
     rave_int _constant_int_value;
 

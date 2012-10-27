@@ -407,8 +407,8 @@ bool Internal::ConvertsTo( const Internal& type ) const
         return true;
     }
 
-    if ( _raw_type == TYPE_TUPLE ) {
-        if ( type._raw_type != TYPE_TUPLE || _type_map.size() != type._type_map.size() )
+    if ( _raw_type == TYPE_ALGEBRAIC ) {
+        if ( type._raw_type != TYPE_ALGEBRAIC || _type_map.size() != type._type_map.size() )
             return false;
         auto i = _type_map.begin();
         auto j = type._type_map.begin();

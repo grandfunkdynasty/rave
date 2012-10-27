@@ -161,9 +161,16 @@ Type construct_type( Node* node )
 
     if ( node->sub_type == TYPE_ALGEBRAIC ) {
         Type::TypeMap map;
-        for ( NodeList* t = node->begin; t; t = t->next )
-            map[ std::string( t->elem->string_data ) ] =
-                t->elem->begin ? construct_type( t->elem->begin->elem ) : Type::Void();
+        for ( NodeList* t = node->begin; t; t = t->next ) {
+            std::string s = t->elem->string_data;
+            int i = 0;
+            while ( map.find( s ) != map.end() ) {
+                std::stringstream ss;
+                ss << i;
+                s = std::string( t->elem->string_data ) + ":" + ss.str();
+            }
+            map[ s ] = t->elem->begin ? construct_type( t->elem->begin->elem ) : Type::Void();
+        }
         return Type::Algebraic( map );
     }
 

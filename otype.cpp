@@ -42,8 +42,12 @@ Type TypeOperator::Resolve( const Ast& arg, const Type& type, const std::string&
     }
     if ( type.IsAlgebraic() ) {
         Type::TypeMap map;
-        for ( auto i = type.TypeArgsMap().begin(); i != type.TypeArgsMap().end(); ++i )
+        for ( auto i = type.TypeArgsMap().begin(); i != type.TypeArgsMap().end(); ++i ) {
+            auto j = i->first.find( "?" );
+            if ( j != std::string::npos )
+                Error( arg, "duplicate constructor `" + i->first.substr( 0, j ) + "' for type" );
             map[ i->first ] = Resolve( arg, i->second, scope_name );
+        }
         return Type::Algebraic( map );
     }
     Type::TypeList list;

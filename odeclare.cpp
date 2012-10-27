@@ -78,7 +78,7 @@ void DeclareOperator::DeclareAlgebraicConstructors( const Ast& arg, const std::s
             continue;
         }
         _ostatic->_table.AddEntry( scoped_name, Type::Function( type, args ) );
-        _ostatic->_table.AddEntry( "constructor:" + scoped_name, Type::Void() );
+        _ostatic->_table.AddEntry( "constructor:" + scoped_name, type );
     }
 }
 
