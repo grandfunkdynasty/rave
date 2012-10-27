@@ -29,7 +29,7 @@ public:
     Internal( int raw_type, const Type::TypeMap& type_map );
 
     Internal( const Internal& type );
-    const Internal& operator=( const Internal& type );
+    Internal& operator=( const Internal& type );
 
     bool operator==( const Internal& type ) const;
     bool operator!=( const Internal& type ) const;
@@ -133,7 +133,7 @@ Type::Type( const Type& type )
 {
 }
 
-const Type& Type::operator=( const Type& type )
+Type& Type::operator=( const Type& type )
 {
     _type = type._type;
     _typename = type._typename;

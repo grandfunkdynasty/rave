@@ -41,7 +41,7 @@ public:
     ~Type();
 
     Type( const Type& type );
-    const Type& operator=( const Type& type );
+    Type& operator=( const Type& type );
 
     bool operator==( const Type& type ) const;
     bool operator!=( const Type& type ) const;

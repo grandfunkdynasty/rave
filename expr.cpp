@@ -19,11 +19,13 @@ ParseError::~ParseError()
 Constant::Constant( rave_int value )
 : _is_int( true )
 , _int_value( value )
+, _float_value( 0.0 )
 {
 }
 
 Constant::Constant( rave_float value )
 : _is_int( false )
+, _int_value( 0 )
 , _float_value( value )
 {
 }

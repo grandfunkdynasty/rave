@@ -8,8 +8,9 @@
 #define IMPLEMENT_TYPE IMPLEMENT_CONST
 
 IrGenOperator::IrGenOperator( llvm::Module* module, llvm::IRBuilder<>& builder )
-    : _builder( builder )
+    : _value( 0 )
     , _module( module )
+    , _builder( builder )
     , _return_type( Type::Void() )
     , _let_variables( false )
     , _success_bb( 0 )

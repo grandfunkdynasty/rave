@@ -62,7 +62,7 @@ void SymbolTable< T >::Push()
 template< typename T >
 void SymbolTable< T >::Pop()
 {
-    if ( _entry_stack.size() > 0 )
+    if ( !_entry_stack.empty() )
         _entry_stack.erase( _entry_stack.end() - 1 );
 }
 
