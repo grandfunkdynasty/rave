@@ -290,7 +290,8 @@ Ast* construct( Node* node, bool helper )
 
     // Let
     if ( type == NODE_LET )
-        return new Let( construct( t->elem ), construct( t->next->elem ), construct( t->next->next->elem ) );
+        return new Let( construct( t->elem ), construct( t->next->elem ),
+                        construct( t->next->next->elem ) );
 
     // Block
     if ( type == NODE_BLOCK ) {
@@ -316,7 +317,8 @@ Ast* construct( Node* node, bool helper )
     // Loop
     if ( type == NODE_LOOP )
         return new Loop( construct( t->elem ), construct( t->next->elem ),
-                         construct( t->next->next->elem ), construct( t->next->next->next->elem ) );
+                         construct( t->next->next->elem ),
+                         construct( t->next->next->next->elem ) );
 
     // Sequence call
     if ( type == NODE_SEQUENCE_CALL ) {

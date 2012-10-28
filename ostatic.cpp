@@ -43,7 +43,8 @@ Ast* StaticOperator::Convert( Ast* expr, Type from, Type to )
     if ( from == Type::Void() || to == Type::Void() )
         return expr;
     if ( !from.ConvertsTo( to ) ) {
-        Error( *expr, "conversion: cannot convert `" + from.Typename() + "' to `" + to.Typename() + "'" );
+        Error( *expr, "conversion: cannot convert `" + from.Typename() +
+                      "' to `" + to.Typename() + "'" );
         return expr;
     }
     if ( from.Equivalent( to ) )
@@ -187,7 +188,8 @@ IMPLEMENT( BinaryOp )
     else if ( arg._type == BINARY_OP_ADD || arg._type == BINARY_OP_SUB ||
               arg._type == BINARY_OP_MUL || arg._type == BINARY_OP_DIV ||
               arg._type == BINARY_OP_MOD || arg._type == BINARY_OP_EXP ) {
-        // TODO: const-checking for illegal operations? <-- I think that means check for expr/0 etc
+        // TODO: const-checking for illegal operations?
+        // <-- I think that means check for expr/0 etc
         if ( ( !left.ConvertsTo( Type::Int() ) && !left.ConvertsTo( Type::Float() ) &&
                left != Type::Void() ) ||
              ( !right.ConvertsTo( Type::Int() ) && !right.ConvertsTo( Type::Float() ) &&
@@ -237,8 +239,11 @@ IMPLEMENT( UnaryOp )
              _type != Type::Void() )
             Error( arg, "cannot apply `" + op + "' to `" + _type.Typename() + "'" );
         else
-            arg._expr = Convert( arg._expr, _type, _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float() );
-        arg._op_type = _type = _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float();
+            arg._expr =
+                Convert( arg._expr, _type,
+                         _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float() );
+        arg._op_type = _type =
+            _type.ConvertsTo( Type::Int() ) ? Type::Int() : Type::Float();
     }
     else if ( arg._type == UNARY_OP_FLOOR ) {
         if ( _type != Type::Float() && _type != Type::Void() )
@@ -264,14 +269,16 @@ IMPLEMENT( TupleConstruct )
 {
     if ( _let_variables ) {
         Type t = _let_type;
-        if ( !t.IsTuple() )
+        bool b = t.IsTuple();
+        if ( !b )
             Error( arg, "let variables: " + t.Typename() + " is not a tuple" );
         else if ( t.TypeArgs().size() != arg._list.size() ) {
             std::stringstream ss;
-            ss << "let variables: " << t.Typename() << " is not a " << arg._list.size() << "-tuple";
+            ss << "let variables: " << t.Typename() <<
+                " is not a " << arg._list.size() << "-tuple";
             Error( arg, ss.str() );
         }
-        for ( std::size_t i = 0; i < arg._list.size() && i < t.TypeArgs().size() && t.IsTuple(); ++i ) {
+        for ( std::size_t i = 0; i < arg._list.size() && i < t.TypeArgs().size() && b; ++i ) {
             _let_type = t.TypeArgs()[ i ];
             Operate( arg._list[ i ] );
         }
@@ -376,14 +383,28 @@ IMPLEMENT( FunctionCall )
             Error( arg, "let variables: `" + identifier + "' is not a constructor" );
         else {
             const Type& constructor = _table.GetEntry( identifier );
+            const Type& algebraic = constructor.ReturnType();
+            auto it = algebraic.TypeArgsMap().begin();
+            auto substr = identifier.substr( 1 + identifier.find_last_of( "." ) );
+            for ( ; it != algebraic.TypeArgsMap().end() && it->first != substr; ++it ) {
+                if ( it->second != Type::Void() )
+                    ++arg._let_index;
+                ++arg._let_value;
+            }
+            ++arg._let_index;
             Type t = _let_type;
-            if ( !t.Equivalent( constructor.ReturnType() ) ) // TODO ~ ConvertsTo, maybe? (need some conversion somewhere)
-                Error( arg, "let variables: cannot convert `" + t.Typename() + "' to `" + constructor.ReturnType().Typename() );
+            // TODO ~ ConvertsTo, maybe? (need some conversion somewhere)
+            if ( !t.Equivalent( algebraic ) )
+                Error( arg, "let variables: cannot convert `" + t.Typename() +
+                            "' to `" + constructor.ReturnType().Typename() );
             if ( arg._args.size() < constructor.TypeArgs().size() )
-                Error( arg, "let variables: too few arguments for constructor `" + identifier + "'" );
+                Error( arg, "let variables: too few arguments for constructor `" +
+                            identifier + "'" );
             else if ( arg._args.size() > constructor.TypeArgs().size() )
-                Error( arg, "let variables: too many arguments for constructor `" + identifier + "'" );
-            for ( std::size_t i = 0; i < arg._args.size() && i < constructor.TypeArgs().size(); ++i ) {
+                Error( arg, "let variables: too many arguments for constructor `" +
+                            identifier + "'" );
+            auto csize = constructor.TypeArgs().size();
+            for ( std::size_t i = 0; i < arg._args.size() && i < csize; ++i ) {
                 _let_type = constructor.TypeArgs()[ i ];
                 Operate( arg._args[ i ] );
             }
@@ -694,7 +715,8 @@ IMPLEMENT( VidDef )
         Error( arg, "`cache' modifier illegal on video definitions" );
     if ( arg._modifiers & MODIFIER_LOCAL )
         Error( arg, "`local' modifier illegal on video definitions" );
-    if ( !_table.AddEntry( "video::" /*+ _namespace*/ + arg._id, Type::Sequence( Type::TypeList() ) ) )
+    if ( !_table.AddEntry( "video::" /*+ _namespace*/ + arg._id,
+                           Type::Sequence( Type::TypeList() ) ) )
         Error( arg, "video `" + arg._id + "' already declared in this scope" );
     Operate( arg._frame_count );
     if ( !_type.ConvertsTo( Type::Int() ) && _type != Type::Void() )

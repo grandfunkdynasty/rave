@@ -28,9 +28,11 @@ private:
 
     DeclareOperator& operator=( const DeclareOperator& rhs ) { return *this; }
     void DeclareAlgebraicConstructors( const Ast& arg, const Type& type );
-    void DeclareAlgebraicConstructors( const Ast& arg, const std::string& rel_name, const Type& type );
+    void DeclareAlgebraicConstructors( const Ast& arg, const std::string& rel_name,
+                                       const Type& type );
     void IrGenAlgebraicConstructors( const Ast& arg, const Type& type );
-    void IrGenAlgebraicConstructors( const Ast& arg, const std::string& rel_name, const Type& type );
+    void IrGenAlgebraicConstructors( const Ast& arg, const std::string& rel_name,
+                                     const Type& type );
 
     DeclareOwner _owner;
     TypeOperator* _otype;

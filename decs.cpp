@@ -19,7 +19,7 @@ Argument::~Argument()
 ***************************************************************/
 
 FuncDef::FuncDef( int modifiers, Type return_type, const std::string& id,
-             const AstList& args, Ast* expr )
+                  const AstList& args, Ast* expr )
 : _modifiers( modifiers )
 , _return_type( return_type )
 , _id( id )

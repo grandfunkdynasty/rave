@@ -54,7 +54,8 @@ void DeclareOperator::DeclareAlgebraicConstructors( const Ast& arg, const Type& 
         DeclareAlgebraicConstructors( arg, type.Typedef().substr( 0, i + 1 ), type );
 }
 
-void DeclareOperator::DeclareAlgebraicConstructors( const Ast& arg, const std::string& rel_name, const Type& type )
+void DeclareOperator::DeclareAlgebraicConstructors( const Ast& arg, const std::string& rel_name,
+                                                    const Type& type )
 {
     if ( type.IsFunction() )
         DeclareAlgebraicConstructors( arg, rel_name, type.ReturnType() );
@@ -73,8 +74,10 @@ void DeclareOperator::DeclareAlgebraicConstructors( const Ast& arg, const std::s
             args.push_back( it->second );
         if ( _ostatic->_table.HasEntry( scoped_name ) ) {
             if ( !_ostatic->_table.HasEntry( "constructor:" + scoped_name ) ||
-                 !_ostatic->_table.GetEntry( scoped_name ).Equivalent( Type::Function( type, args ) ) )
-                _ostatic->Error( arg, "identifier `" + name + "' already declared in this scope" );
+                 !_ostatic->_table.GetEntry( scoped_name ).
+                     Equivalent( Type::Function( type, args ) ) )
+                _ostatic->Error( arg, "identifier `" + name +
+                                 "' already declared in this scope" );
             continue;
         }
         _ostatic->_table.AddEntry( scoped_name, Type::Function( type, args ) );
@@ -91,7 +94,8 @@ void DeclareOperator::IrGenAlgebraicConstructors( const Ast& arg, const Type& ty
         IrGenAlgebraicConstructors( arg, type.Typedef().substr( 0, i + 1 ), type );
 }
 
-void DeclareOperator::IrGenAlgebraicConstructors( const Ast& arg, const std::string& rel_name, const Type& type )
+void DeclareOperator::IrGenAlgebraicConstructors( const Ast& arg, const std::string& rel_name,
+                                                  const Type& type )
 {
     if ( type.IsFunction() )
         IrGenAlgebraicConstructors( arg, rel_name, type.ReturnType() );
@@ -227,7 +231,8 @@ IMPLEMENT( FuncDef )
         _declaration_list.clear();
         for ( std::size_t i = 0; i < arg._args.size(); ++i )
             Operate( arg._args[ i ] );
-        if ( !_ostatic->_table.AddEntry( _namespace + arg._id, Type::Function( arg._return_type, _declaration_list ) ) )
+        if ( !_ostatic->_table.AddEntry( _namespace + arg._id,
+                                         Type::Function( arg._return_type, _declaration_list ) ) )
             _ostatic->Error( arg, "identifier `" + arg._id + "' already declared in this scope" );
         arg._arg_types = _declaration_list;
         DeclareAlgebraicConstructors( arg, arg._return_type );
@@ -275,13 +280,15 @@ IMPLEMENT( TypeDef )
     }
 
     if ( _owner == DECLARE_TYPE ) {
-        if ( !_otype->_table.AddEntry( _namespace + arg._id, _otype->Resolve( arg, arg._type, _namespace ) ) )
+        if ( !_otype->_table.AddEntry( _namespace + arg._id,
+                                       _otype->Resolve( arg, arg._type, _namespace ) ) )
             _otype->Error( arg, "type `~" + arg._id + "' already declared in this scope" );
     }
 
     if ( _owner != DECLARE_TYPE_RESOLVE )
         return;
-    //_otype->_table.GetEntry( _namespace + arg._id ) = _otype->Resolve( arg, arg._type, _namespace );
+    //_otype->_table.GetEntry( _namespace + arg._id ) =
+    //    _otype->Resolve( arg, arg._type, _namespace );
 }
 
 IMPLEMENT( Program )
@@ -307,5 +314,6 @@ IMPLEMENT( Program )
     for ( std::size_t i = 0; i < arg._elements.size(); ++i )
         Operate( arg._elements[ i ] );
     --_declare_globals;
-    _namespace = _namespace.substr( 0, 1 + _namespace.find_last_of( '.', _namespace.length() - 2 ) );
+    auto i = _namespace.find_last_of( '.', _namespace.length() - 2 );
+    _namespace = _namespace.substr( 0, 1 + i );
 }

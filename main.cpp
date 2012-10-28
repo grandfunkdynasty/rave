@@ -95,6 +95,7 @@ int main( int argc, char** argv )
 
     void* jit_func = execution_engine->getPointerToFunction( &list.back() );
     struct ReturnType { rave_int a; rave_int b; };
+    //typedef rave_float ReturnType;
     ReturnType r = ( ( ReturnType (*)( rave_int ) )( intptr_t )jit_func )( 42 );
     std::cout << "int value: " << r.a << ", " << r.b << "\n";
     delete module;

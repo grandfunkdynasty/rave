@@ -44,11 +44,13 @@ private:
 
     Type _return_type;
     bool _let_variables;
+    llvm::Value* _let_cond_expr;
     llvm::Function::arg_iterator _arg_iterator;
     llvm::BasicBlock* _success_bb;
     llvm::BasicBlock* _fallthrough_bb;
 
-    typedef std::vector< std::pair< Type, std::vector< llvm::Function* > > > AlgebraicConstructorList;
+    typedef std::pair< Type, std::vector< llvm::Function* > > AlgebraicConstructor;
+    typedef std::vector< AlgebraicConstructor > AlgebraicConstructorList;
     AlgebraicConstructorList _algebraic_constructor_list;
 
 };

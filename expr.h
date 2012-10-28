@@ -221,6 +221,8 @@ private:
 
     Ast* _function;
     AstList _args;
+    rave_int _let_value;
+    rave_int _let_index;
 
 };
 

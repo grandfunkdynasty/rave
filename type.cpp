@@ -288,7 +288,7 @@ bool Internal::operator!=( const Internal& type ) const
     return !operator==( type );
 }
 
-const Internal& Internal::operator=( const Internal& type )
+Internal& Internal::operator=( const Internal& type )
 {
     _raw_type = type._raw_type;
     _return_type = type._return_type;
@@ -348,7 +348,8 @@ bool Internal::Equivalent( const Internal& type ) const
 {
     if ( _raw_type != type._raw_type )
         return false;
-    if ( _raw_type == TYPE_VOID || _raw_type == TYPE_BOOL || _raw_type == TYPE_INT || _raw_type == TYPE_FLOAT )
+    if ( _raw_type == TYPE_VOID || _raw_type == TYPE_BOOL ||
+         _raw_type == TYPE_INT || _raw_type == TYPE_FLOAT )
         return true;
 
     if ( _raw_type == TYPE_TUPLE ) {
@@ -393,7 +394,8 @@ bool Internal::ConvertsTo( const Internal& type ) const
     if ( _raw_type == TYPE_VOID )
         return type._raw_type == TYPE_VOID;
     if ( _raw_type == TYPE_INT || _raw_type == TYPE_BOOL )
-        return type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT || type._raw_type == TYPE_BOOL;
+        return type._raw_type == TYPE_INT ||
+               type._raw_type == TYPE_FLOAT || type._raw_type == TYPE_BOOL;
     if ( _raw_type == TYPE_FLOAT )
         return type._raw_type == TYPE_FLOAT;
 
@@ -450,8 +452,8 @@ Type Internal::Generalise( const Internal& type ) const
         return type._raw_type == TYPE_INT ? Type::Int() :
                type._raw_type == TYPE_FLOAT ? Type::Float() : Type::Void();
     if ( _raw_type == TYPE_FLOAT )
-        return type._raw_type == TYPE_BOOL || type._raw_type == TYPE_INT || type._raw_type == TYPE_FLOAT ?
-               Type::Float() : Type::Void();
+        return type._raw_type == TYPE_BOOL || type._raw_type == TYPE_INT ||
+               type._raw_type == TYPE_FLOAT ? Type::Float() : Type::Void();
 
     if ( _raw_type == TYPE_TUPLE ) {
         if ( _type_args.size() != type._type_args.size() )
@@ -476,7 +478,8 @@ Type Internal::Generalise( const Internal& type ) const
             if ( i->first != j->first )
                 return Type::Void();
             Type t = i->second.Generalise( j->second );
-            if ( t == Type::Void() && !( i->second == Type::Void() && j->second == Type::Void() ) )
+            if ( t == Type::Void() &&
+                 !( i->second == Type::Void() && j->second == Type::Void() ) )
                 return Type::Void();
             type_map[ i->first ] = t;
         }
@@ -579,13 +582,13 @@ llvm::Type* Internal::LlvmType( llvm::LLVMContext& context ) const
             if ( i->second != Type::Void() )
                 args.push_back( i->second.LlvmType( context ) );
         }
-        return llvm::StructType::get( context, args, false );
+        return llvm::StructType::get( context, args, true );
     }
 
     for ( std::size_t i = 0; i < _type_args.size(); ++i )
         args.push_back( _type_args[ i ].LlvmType( context ) );
     if ( _raw_type == TYPE_TUPLE )
-        return llvm::StructType::get( context, args, false );
+        return llvm::StructType::get( context, args, true );
     if ( _raw_type == TYPE_FUNCTION ) {
         auto t = llvm::FunctionType::get( _return_type.LlvmType( context ), args, false );
         return llvm::PointerType::get( t, 0 );

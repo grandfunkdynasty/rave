@@ -22,7 +22,8 @@ IrGenOperator::~IrGenOperator()
 {
 }
 
-llvm::Value* IrGenOperator::GenSwitch( llvm::Value* expr, llvm::Value* left, llvm::Value* right, Type type )
+llvm::Value* IrGenOperator::GenSwitch( llvm::Value* expr, llvm::Value* left, llvm::Value* right,
+                                       Type type )
 {
     auto parent = _builder.GetInsertBlock()->getParent();
     auto left_bb = llvm::BasicBlock::Create( _builder.getContext(), "left", parent );
@@ -42,7 +43,7 @@ llvm::Value* IrGenOperator::GenSwitch( llvm::Value* expr, llvm::Value* left, llv
 
     parent->getBasicBlockList().push_back( merge_bb );
     _builder.SetInsertPoint( merge_bb );
-    auto phi = _builder.CreatePHI( type.LlvmType( _builder.getContext() ), 2, "trntmp" );
+    auto phi = _builder.CreatePHI( type.LlvmType( _builder.getContext() ), 2, "trn" );
       
     phi->addIncoming( left, left_bb );
     phi->addIncoming( right, right_bb );
@@ -54,16 +55,19 @@ llvm::Value* IrGenOperator::GenConvert( llvm::Value* expr, Type from, Type to )
     if ( from == Type::Int() && to == Type::Bool() )
         return _builder.CreateICmpNE( expr, ConstantInt( 0 ), "bol" );
     if ( from == Type::Bool() && to == Type::Int() )
-        return _builder.CreateZExt( expr, llvm::Type::getInt32Ty( _builder.getContext() ), "int" );
+        return _builder.CreateZExt( expr,
+                                    llvm::Type::getInt32Ty( _builder.getContext() ), "int" );
     if ( from == Type::Int() && to == Type::Float() )
-        return _builder.CreateSIToFP( expr, llvm::Type::getDoubleTy( _builder.getContext() ), "flt" );
+        return _builder.CreateSIToFP( expr,
+                                      llvm::Type::getDoubleTy( _builder.getContext() ), "flt" );
 
     if ( !from.IsTuple() || !to.IsTuple() )
         return expr;
 
     llvm::Value* tuple = ConstantStruct( to.TypeArgs() );
     for ( std::size_t i = 0; i < to.TypeArgs().size(); ++i ) {
-        auto convert = GenConvert( _builder.CreateExtractValue( expr, i, "ext" ), from.TypeArgs()[ i ], to.TypeArgs()[ i ] );
+        auto convert = GenConvert( _builder.CreateExtractValue( expr, i, "ext" ),
+                                   from.TypeArgs()[ i ], to.TypeArgs()[ i ] );
         tuple = _builder.CreateInsertValue( tuple, convert, i, "rep" );
     }
     return tuple;
@@ -71,13 +75,16 @@ llvm::Value* IrGenOperator::GenConvert( llvm::Value* expr, Type from, Type to )
 
 llvm::Constant* IrGenOperator::ConstantBool( bool value )
 {
-    return llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 1, value ? 1 : 0, true ) );
+    return llvm::ConstantInt::get( _builder.getContext(),
+                                   llvm::APInt( 1, value ? 1 : 0, true ) );
 }
 
 llvm::Constant* IrGenOperator::ConstantInt( rave_int value )
 {
     int64_t t = value; // TODO ~ what if it's too big?
-    return llvm::ConstantInt::get( _builder.getContext(), llvm::APInt( 8 * sizeof( rave_int ), *( uint64_t* )&t, true ) );
+    return llvm::ConstantInt::get( _builder.getContext(),
+                                   llvm::APInt( 8 * sizeof( rave_int ),
+                                   *( uint64_t* )&t, true ) );
 }
 
 llvm::Constant* IrGenOperator::ConstantFloat( rave_float value )
@@ -98,7 +105,8 @@ llvm::Constant* IrGenOperator::ConstantStruct( const Type::TypeList& tuple_args 
         else
             values.push_back( ConstantInt( 0 ) );
     }
-    return llvm::ConstantStruct::get( ( llvm::StructType* )Type::Tuple( tuple_args ).LlvmType( _builder.getContext() ), values );
+    auto t = Type::Tuple( tuple_args ).LlvmType( _builder.getContext() );
+    return llvm::ConstantStruct::get( ( llvm::StructType* )t, values );
 }
 
 /***************************************************************
@@ -191,10 +199,14 @@ IMPLEMENT( BinaryOp )
                 rt = _builder.CreateExtractValue( rt, indices[ i ], "cex" );
             }
             if ( t == Type::Float() )
-                vt = arg._type == BINARY_OP_EQ ? _builder.CreateFCmpOEQ( lt, rt, "feq" ) : _builder.CreateFCmpONE( lt, rt, "fne" );
+                vt = arg._type == BINARY_OP_EQ ? _builder.CreateFCmpOEQ( lt, rt, "feq" ) :
+                                                 _builder.CreateFCmpONE( lt, rt, "fne" );
             else
-                vt = arg._type == BINARY_OP_EQ ? _builder.CreateICmpEQ( lt, rt, "ieq" ) : _builder.CreateICmpNE( lt, rt, "ine" );
-            _value = _value == 0 ? vt : arg._type == BINARY_OP_EQ ? _builder.CreateAnd( _value, vt, "ceq" ) : _builder.CreateOr( _value, vt, "cne" );
+                vt = arg._type == BINARY_OP_EQ ? _builder.CreateICmpEQ( lt, rt, "ieq" ) :
+                                                 _builder.CreateICmpNE( lt, rt, "ine" );
+            _value = _value == 0 ? vt :
+                     arg._type == BINARY_OP_EQ ? _builder.CreateAnd( _value, vt, "ceq" ) :
+                                                 _builder.CreateOr( _value, vt, "cne" );
         }
     }
     else if ( arg._type == BINARY_OP_GT )
@@ -225,8 +237,14 @@ IMPLEMENT( BinaryOp )
             auto l_check = _builder.CreateICmpSGE( left, ConstantInt( 0 ), "dif" );
             auto r_check = _builder.CreateICmpSGE( right, ConstantInt( 0 ), "dif" );
             auto if_pos = _builder.CreateSDiv( left, right, "div" );
-            auto correction = GenSwitch( r_check, _builder.CreateSub( left, _builder.CreateSub( right, ConstantInt( 1 ), "dub" ), "dub" ),
-                                                          _builder.CreateAdd( left, _builder.CreateAdd( right, ConstantInt( 1 ), "ddd" ), "ddd" ), Type::Int() );
+            auto correction_sub =
+                _builder.CreateSub( left, _builder.CreateSub( right, ConstantInt( 1 ), "dub" ),
+                                    "dub" );
+            auto correction_add =
+                _builder.CreateAdd( left, _builder.CreateAdd( right, ConstantInt( 1 ), "ddd" ),
+                                    "ddd" );
+            auto correction =
+                GenSwitch( r_check, correction_sub, correction_add, Type::Int() );
             auto if_neg = _builder.CreateSDiv( correction, right, "div" );
             _value = GenSwitch( l_check, if_pos, if_neg, Type::Int() );
         }
@@ -238,7 +256,9 @@ IMPLEMENT( BinaryOp )
             auto l_check = _builder.CreateICmpSGE( left, ConstantInt( 0 ), "mif" );
             auto r_check = _builder.CreateICmpSGE( right, ConstantInt( 0 ), "mif" );
             auto if_pos = _builder.CreateSRem( left, right, "mod" );
-            auto r_abs = GenSwitch( r_check, right, _builder.CreateSub( ConstantInt( 0 ), right, "mub" ), Type::Int() );
+            auto r_abs =
+                GenSwitch( r_check, right,
+                           _builder.CreateSub( ConstantInt( 0 ), right, "mub" ), Type::Int() );
             auto if_neg = _builder.CreateAdd( r_abs, if_pos, "mdd" );
             _value = GenSwitch( l_check, if_pos, if_neg, Type::Int() );
         }
@@ -263,9 +283,15 @@ IMPLEMENT( UnaryOp )
             _value = _builder.CreateFSub( ConstantFloat( 0.0 ), _value, "fng" );
     }
     else if ( arg._type == UNARY_OP_FLOOR ) {
-        auto check = _builder.CreateFCmpOGE( _value, ConstantFloat( 0.0 ), "fif" );
-        auto floor = _builder.CreateFPToSI( _value, llvm::Type::getInt32Ty( _builder.getContext() ), "flr" );
-       _value = GenSwitch( check, floor, _builder.CreateSub( floor, ConstantInt( 1 ) ), Type::Int() );
+        auto trunc =
+            _builder.CreateFPToSI( _value,
+                                   llvm::Type::getInt32Ty( _builder.getContext() ), "flr" );
+        auto check_pos = _builder.CreateFCmpOGE( _value, ConstantFloat( 0.0 ), "fif" );
+        auto check_int = _builder.CreateSIToFP( trunc, llvm::Type::getDoubleTy( _builder.getContext() ), "fin" );
+        check_int = _builder.CreateFCmpOEQ( _value, check_int, "fif" );
+        auto check = _builder.CreateOr( check_pos, check_int, "for" );
+        _value = GenSwitch( check, trunc,
+                            _builder.CreateSub( trunc, ConstantInt( 1 ) ), Type::Int() );
     }
 }
 
@@ -319,6 +345,19 @@ IMPLEMENT( TupleReplace )
 
 IMPLEMENT( FunctionCall )
 {
+    if ( _let_variables ) {
+        auto algebraic = _value;
+        auto cond_expr = _builder.CreateExtractValue( algebraic, 0, "let" );
+        cond_expr = _builder.CreateICmpEQ( cond_expr, ConstantInt( arg._let_value ), "let" );
+        _let_cond_expr = _let_cond_expr == 0 ? cond_expr :
+            _builder.CreateAnd( _let_cond_expr, cond_expr, "let" );
+        if ( arg._args.size() > 0 ) {
+            _value = _builder.CreateExtractValue( algebraic, arg._let_index, "let" );
+            Operate( arg._args[ 0 ] );
+        }
+        return;
+    }
+
     Operate( arg._function );
     auto function = _value;
 
@@ -344,7 +383,8 @@ IMPLEMENT( Body )
     parent->getBasicBlockList().push_back( merge_bb );
     _builder.SetInsertPoint( merge_bb );
     auto phi =
-        _builder.CreatePHI( _return_type.LlvmType( _builder.getContext() ), arg._steps.size(), "ret" );
+        _builder.CreatePHI( _return_type.LlvmType( _builder.getContext() ),
+                            arg._steps.size(), "ret" );
     merge_bb = _builder.GetInsertBlock();
 
     auto i = arg._steps.rbegin();
@@ -397,8 +437,13 @@ IMPLEMENT( Let )
     Operate( arg._expr );
     _table.Push();
     _let_variables = true;
+    _let_cond_expr = 0;
     Operate( arg._ids );
     _let_variables = false;
+    if ( _let_cond_expr ) {
+        _builder.CreateCondBr( _let_cond_expr, _success_bb, _fallthrough_bb );
+        _builder.SetInsertPoint( _success_bb );
+    }
     Operate( arg._in );
     _table.Pop();
 }

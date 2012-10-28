@@ -1,26 +1,19 @@
-INCLUDE fibonacci.rve
+//INCLUDE fibonacci.rve
 
 //(int, int) test1(int n) (n, (1 ? fibonacci.fast : fibonacci.slow)(n));
 //int test_help(int n, int function(int) f) f(n);
 //(int, int) test2(int n) (n, test_help(n, fibonacci.fast));
 
 //<list (int, ~list) | tail> ~list;
+
 a_type {
-    <cool int | sick (float, float) | none | bad int | some> ~it;
-    <hard int | wack (float, float) | word> ~jt;
+    <cool int | bad (float, float) | brad> ~it;
 }
 
-~a_type.it foo()
+(int, int) foo(int x) t = a_type.bad((-555, -555)):
 {
-    1: a_type.cool(5);
-    1: a_type.none();
-    a_type.sick((2,1));
-}
-
-(int, int) foo2() t = foo():
-{
-    a_type.cool(x) = t: (x, x);
-    a_type.sick((a, b)) = t: ([a], [b]);
-    a_type.none() = t: (0, 0);
+    a_type.bad((a, b)) = t: ([a],[b]);
+    a_type.cool(a) = t: (a, a);
+    a_type.brad() = t: (1, 1);
     (0, 0);
 }

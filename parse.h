@@ -61,7 +61,8 @@ extern "C" {
 #endif
 
     void parse_set_error( int* errors );
-    void write_error( const char* name, int line, const char* next, const char* text, int unexpected );
+    void write_error( const char* name, int line, const char* next,
+                      const char* text, int unexpected );
 
 #ifdef __cplusplus
 }

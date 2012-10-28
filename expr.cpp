@@ -208,6 +208,8 @@ TupleReplace::~TupleReplace()
 FunctionCall::FunctionCall( Ast* function, const AstList& list )
 : _function( function )
 , _args( list )
+, _let_value( 0 )
+, _let_index( 0 )
 {
 }
 

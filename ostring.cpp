@@ -319,7 +319,8 @@ IMPLEMENT( Argument )
 
 IMPLEMENT( FuncDef )
 {
-    _result << modifiers( arg._modifiers ) << arg._return_type.Typename() << " " << arg._id << "(";
+    _result << modifiers( arg._modifiers ) <<
+               arg._return_type.Typename() << " " << arg._id << "(";
     bool first = true;
     for ( std::size_t i = 0; i < arg._args.size(); ++i ) {
         if ( !first )

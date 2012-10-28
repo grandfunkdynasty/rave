@@ -10,7 +10,8 @@
 extern int yylex();
 extern int yyline;
 extern const char* yyname;
-extern void write_error( const char* name, int line, const char* next, const char* text, int Converter );
+extern void write_error( const char* name, int line, const char* next,
+                         const char* text, int Converter );
 extern char* yytext;
 struct Node* parse_tree;
 
@@ -115,9 +116,12 @@ struct Node* error( const char* text )
 
 %type <string>      id_expr
 %type <integer>     modifier_list modifier layer_type
-%type <node>        type_args type_args_list algebraic_list algebraic_constructor type expr t_expr expr_list body body_list
-%type <node>        layer layer_optional_expr layer_optional_fx layer_list statement o_statement c_statement statement_list scope_def_list scope_def
-%type <node>        argument_def argument_list func_def seq_def vid_def type_def program_scope sub_scope program
+%type <node>        type_args type_args_list algebraic_list algebraic_constructor type
+%type <node>        expr t_expr expr_list body body_list
+%type <node>        layer layer_optional_expr layer_optional_fx layer_list statement
+%type <node>        o_statement c_statement statement_list scope_def_list scope_def
+%type <node>        argument_def argument_list func_def seq_def vid_def type_def
+%type <node>        program_scope sub_scope program
 %start program
 
 %%
@@ -169,6 +173,7 @@ type : T_INT                                                        { $$ = alloc
                                                                       push_back( $$, $4 ); }
      | '~' id_expr                                                  { $$ = alloc_node( NODE_TYPE, TYPE_TYPEDEF );
                                                                       $$->string_data = $2; }
+     | '(' type ')'                                                 { $$ = $2; }
      ;
                                                                       
 /***************************************************************
