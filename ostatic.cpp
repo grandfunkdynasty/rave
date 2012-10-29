@@ -467,6 +467,7 @@ IMPLEMENT( Converter )
 
 IMPLEMENT( Body )
 {
+    // TODO ~ work out that covering all cases of algebraic isn't not all return
     bool b = _return_path;
     bool unreachable = false;
     _return_path = false;

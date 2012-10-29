@@ -60,7 +60,8 @@ llvm::Value* IrGenOperator::GenConvert( llvm::Value* expr, Type from, Type to )
     if ( from == Type::Int() && to == Type::Float() )
         return _builder.CreateSIToFP( expr,
                                       llvm::Type::getDoubleTy( _builder.getContext() ), "flt" );
-
+    // TODO ~ algebraic; NEED LIBRARY FOR COMPUTING INDICES & OFFSETS AND THINGS THIS IS GETTIN
+    // RIDICULOUS
     if ( !from.IsTuple() || !to.IsTuple() )
         return expr;
 
@@ -95,16 +96,6 @@ llvm::Constant* IrGenOperator::ConstantFloat( rave_float value )
 llvm::Constant* IrGenOperator::ConstantStruct( const Type::TypeList& tuple_args )
 {
     std::vector< llvm::Constant* > values;
-    for ( std::size_t i = 0; i < tuple_args.size(); ++i ) {
-        if ( tuple_args[ i ] == Type::Bool() )
-            values.push_back( ConstantBool( false ) );
-        else if ( tuple_args[ i ] == Type::Float() )
-            values.push_back( ConstantFloat( 0.0 ) );
-        else if ( tuple_args[ i ].IsTuple() )
-            values.push_back( ConstantStruct( tuple_args[ i ].TypeArgs() ) );
-        else
-            values.push_back( ConstantInt( 0 ) );
-    }
     auto t = Type::Tuple( tuple_args ).LlvmType( _builder.getContext() );
     return llvm::ConstantStruct::get( ( llvm::StructType* )t, values );
 }
@@ -172,6 +163,8 @@ IMPLEMENT( BinaryOp )
     else if ( arg._type == BINARY_OP_RSHIFT )
         _value = _builder.CreateAShr( left, right, "shr" );
     else if ( arg._type == BINARY_OP_EQ || arg._type == BINARY_OP_NE ) {
+        // TODO ~ algebraic equality
+        // similarly here we need to compute offsets easily
         _value = 0;
         typedef std::vector< rave_int > index_list;
         std::vector< index_list > stack;

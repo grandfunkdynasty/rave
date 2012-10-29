@@ -10,10 +10,17 @@ a_type {
     <cool int | bad (float, float) | brad> ~it;
 }
 
-(int, int) foo(int x) t = a_type.bad((-555, -555)):
+(~a_type.it, ~a_type.it) lol() (a_type.cool(5), a_type.brad());
+
+(int, int) foo(int x) t = a_type.bad((-555, -555)): u = (t, t):
 {
-    a_type.bad((a, b)) = t: ([a],[b]);
+    (a_type.bad((a, b)), a_type.bad((c, d))) = u: ([a],[b]);
     a_type.cool(a) = t: (a, a);
     a_type.brad() = t: (1, 1);
+    (0, 0);
+}
+
+(int, int) foo2(int x) {
+    cool(a) = lol()[0]: (a, a);
     (0, 0);
 }
